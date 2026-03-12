@@ -118,6 +118,10 @@ export default function TaskCard({ task, onDelete, refresh }: any) {
           >
             Done
           </Text>
+            
+            <Text style={styles.meta}>
+              Folder: {task.folderId ?? "None"}
+            </Text>
 
         </View>
 

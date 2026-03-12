@@ -12,19 +12,22 @@ export type Task = {
   completed?: boolean | null;
   synced?: boolean | null;
   createdAt?: string | null;
+  folderId?: number | null;
 };
 
 export function addTask(
   title: string,
   priority: string = "normal",
-  dueDate?: string
+  dueDate?: string,
+  folderId?: number | null
 ) {
   db.insert(tasks).values({
-    title,
-    priority,
+    title: title,
+    priority: priority,
+    dueDate: dueDate,
+    folderId: folderId,
     status: "todo",
     completed: false,
-    dueDate: dueDate || null,
     synced: false
   }).run();
 }
