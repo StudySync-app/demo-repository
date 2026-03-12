@@ -7,6 +7,7 @@ import TasksScreen from "../screens/TasksScreen";
 import NotesScreen from "../screens/NotesScreen";
 import MediaScreen from "../screens/MediaScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import FoldersScreen from "../screens/FoldersScreen";
 
 import { COLORS } from "../constants/theme";
 
@@ -25,6 +26,7 @@ export default function MainTabs() {
           else if (route.name === "Tasks") iconName = "checkbox";
           else if (route.name === "Notes") iconName = "document-text";
           else if (route.name === "Media") iconName = "images";
+          else if (route.name === "Folders") iconName = "folder";
           else if (route.name === "Settings") iconName = "settings";
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -38,6 +40,7 @@ export default function MainTabs() {
       <Tab.Screen name="Tasks" component={TasksScreen} />
       <Tab.Screen name="Notes" component={NotesScreen} />
       <Tab.Screen name="Media" component={MediaScreen} />
+      <Tab.Screen name="Folders" component={FoldersScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );
