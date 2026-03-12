@@ -6,13 +6,23 @@ import MainTabs from "./src/navigation/MainTabs";
 import NewTaskScreen from "./src/screens/NewTaskScreen";
 import { initDatabase } from "./src/db/init";
 
+import * as Notifications from "expo-notifications";
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
 
   useEffect(() => {
-    initDatabase();
-  }, []);
+
+  initDatabase();
+
+  const requestPermission = async () => {
+    await Notifications.requestPermissionsAsync();
+  };
+
+  requestPermission();
+
+}, []);
 
   return (
     <NavigationContainer>

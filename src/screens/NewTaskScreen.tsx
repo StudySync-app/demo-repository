@@ -6,6 +6,8 @@ import { addTask } from "../db/tasks";
 import { getFolders } from "../db/folders";
 import { getTags, attachTag } from "../db/tags";
 
+import { scheduleTaskReminder } from "../lib/notifications";
+
 export default function NewTaskScreen({ navigation }: any) {
 
   const [title, setTitle] = useState("");
@@ -38,9 +40,13 @@ export default function NewTaskScreen({ navigation }: any) {
       folderId
     );
 
+    // attach tag
     if (selectedTag) {
       attachTag("task", newTaskId, selectedTag);
     }
+
+    // schedule reminder
+    scheduleTaskReminder(title, dueDate);
 
     navigation.goBack();
   };
@@ -60,9 +66,17 @@ export default function NewTaskScreen({ navigation }: any) {
       <Text style={styles.label}>Priority</Text>
 
       <View style={styles.row}>
-        <Text style={styles.option} onPress={() => setPriority("low")}>Low</Text>
-        <Text style={styles.option} onPress={() => setPriority("normal")}>Normal</Text>
-        <Text style={styles.option} onPress={() => setPriority("high")}>High</Text>
+        <Text style={styles.option} onPress={() => setPriority("low")}>
+          Low
+        </Text>
+
+        <Text style={styles.option} onPress={() => setPriority("normal")}>
+          Normal
+        </Text>
+
+        <Text style={styles.option} onPress={() => setPriority("high")}>
+          High
+        </Text>
       </View>
 
       <Text style={styles.label}>Due Date</Text>
