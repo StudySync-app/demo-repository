@@ -1,15 +1,38 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
 import MainTabs from "./src/navigation/MainTabs";
+import NewTaskScreen from "./src/screens/NewTaskScreen";
 import { initDatabase } from "./src/db/init";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
 
-  initDatabase();
-  
+  useEffect(() => {
+    initDatabase();
+  }, []);
+
   return (
     <NavigationContainer>
-      <MainTabs />
+
+      <Stack.Navigator>
+
+        <Stack.Screen
+          name="Home"
+          component={MainTabs}
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="NewTask"
+          component={NewTaskScreen}
+          options={{ title: "Create Task" }}
+        />
+
+      </Stack.Navigator>
+
     </NavigationContainer>
   );
 }

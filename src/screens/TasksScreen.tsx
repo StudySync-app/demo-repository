@@ -1,15 +1,14 @@
-import React, { useState, useCallback } from "react";
-import { Text, ScrollView, View, Button } from "react-native";
+import React, { useCallback } from "react";
+import { Text, View, FlatList, Button } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { getTasks, deleteTask } from "../db/tasks";
 
-export default function TasksScreen() {
-  const [tasks, setTasks] = useState<any[]>([]);
+import TaskCard from "../components/TaskCard";
+import { deleteTask } from "../db/tasks";
+import { useTaskStore } from "../store/useTaskStore";
 
-  const loadTasks = () => {
-    const data = getTasks();
-    setTasks(data);
-  };
+export default function TasksScreen({ navigation }: any) {
+
+  const { tasks, loadTasks } = useTaskStore();
 
   useFocusEffect(
     useCallback(() => {
@@ -17,26 +16,59 @@ export default function TasksScreen() {
     }, [])
   );
 
+  const activeTasks = tasks.filter((t: any) => !t.completed);
+  const completedTasks = tasks.filter((t: any) => t.completed);
+
   return (
-    <ScrollView>
-      <Text>Tasks Screen</Text>
+    <View style={{ flex: 1 }}>
 
-      {tasks.map((task) => (
-        <View
-          key={task.id}
-          style={{ flexDirection: "row", alignItems: "center" }}
-        >
-          <Text style={{ flex: 1 }}>{task.title}</Text>
+      <Text style={{ fontSize: 22, margin: 10 }}>Tasks</Text>
 
-          <Button
-            title="Delete"
-            onPress={() => {
-              deleteTask(task.id);
+      <Button
+        title="New Task"
+        onPress={() => navigation.navigate("NewTask")}
+      />
+
+      {/* My Tasks */}
+      <Text style={{ margin: 10, fontSize: 16, fontWeight: "600" }}>
+        My Tasks
+      </Text>
+
+      <FlatList
+        data={activeTasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TaskCard
+            task={item}
+            onDelete={(id: number) => {
+              deleteTask(id);
               loadTasks();
             }}
+            refresh={loadTasks}
           />
-        </View>
-      ))}
-    </ScrollView>
+        )}
+      />
+
+      {/* Completed Tasks */}
+      <Text style={{ margin: 10, fontSize: 16, fontWeight: "600" }}>
+        Completed Tasks
+      </Text>
+
+      <FlatList
+        data={completedTasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TaskCard
+            task={item}
+            onDelete={(id: number) => {
+              deleteTask(id);
+              loadTasks();
+            }}
+            refresh={loadTasks}
+          />
+        )}
+      />
+
+    </View>
   );
 }
