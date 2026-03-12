@@ -4,6 +4,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import { addTask } from "../db/tasks";
 import { getFolders } from "../db/folders";
+import { getTags, attachTag } from "../db/tags";
 
 export default function NewTaskScreen({ navigation }: any) {
 
@@ -16,20 +17,30 @@ export default function NewTaskScreen({ navigation }: any) {
   const [folders, setFolders] = useState<any[]>([]);
   const [folderId, setFolderId] = useState<number | null>(null);
 
+  const [tags, setTags] = useState<any[]>([]);
+  const [selectedTag, setSelectedTag] = useState<number | null>(null);
+
   useEffect(() => {
-    const data = getFolders();
-    setFolders(data);
+    const folderData = getFolders();
+    setFolders(folderData);
+
+    const tagData = getTags();
+    setTags(tagData);
   }, []);
 
   const saveTask = () => {
     if (!title.trim()) return;
 
-    addTask(
+    const newTaskId = addTask(
       title,
       priority,
       dueDate.toISOString(),
       folderId
     );
+
+    if (selectedTag) {
+      attachTag("task", newTaskId, selectedTag);
+    }
 
     navigation.goBack();
   };
@@ -88,6 +99,21 @@ export default function NewTaskScreen({ navigation }: any) {
         </Text>
       ))}
 
+      <Text style={styles.label}>Select Tag</Text>
+
+      {tags.map((tag) => (
+        <Text
+          key={tag.id}
+          style={[
+            styles.tagOption,
+            selectedTag === tag.id && styles.selectedTag
+          ]}
+          onPress={() => setSelectedTag(tag.id)}
+        >
+          {tag.name}
+        </Text>
+      ))}
+
       <Button title="Save Task" onPress={saveTask} />
 
     </View>
@@ -134,6 +160,18 @@ const styles = StyleSheet.create({
 
   selectedFolder: {
     backgroundColor: "#007AFF",
+    color: "#fff"
+  },
+
+  tagOption: {
+    padding: 8,
+    backgroundColor: "#eee",
+    marginBottom: 6,
+    borderRadius: 6
+  },
+
+  selectedTag: {
+    backgroundColor: "#34C759",
     color: "#fff"
   }
 

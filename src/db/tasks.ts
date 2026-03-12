@@ -17,19 +17,21 @@ export type Task = {
 
 export function addTask(
   title: string,
-  priority: string = "normal",
+  priority: string,
   dueDate?: string,
   folderId?: number | null
 ) {
-  db.insert(tasks).values({
-    title: title,
-    priority: priority,
-    dueDate: dueDate,
-    folderId: folderId,
+  const result = db.insert(tasks).values({
+    title,
+    priority,
+    dueDate,
+    folderId,
     status: "todo",
     completed: false,
     synced: false
   }).run();
+
+  return result.lastInsertRowId;
 }
 
 export function getTasks(): Task[] {
