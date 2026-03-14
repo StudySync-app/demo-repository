@@ -1,15 +1,16 @@
-import React, { useState, useCallback } from "react";
-import { Text, ScrollView, View, Button } from "react-native";
+import React, { useCallback, useState } from "react";
+import { Text, View, FlatList, Button, TextInput, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-import { getTasks, deleteTask } from "../db/tasks";
 
-export default function TasksScreen() {
-  const [tasks, setTasks] = useState<any[]>([]);
+import TaskCard from "../components/TaskCard";
+import { deleteTask } from "../db/tasks";
+import { useTaskStore } from "../store/useTaskStore";
 
-  const loadTasks = () => {
-    const data = getTasks();
-    setTasks(data);
-  };
+export default function TasksScreen({ navigation }: any) {
+
+  const { tasks, loadTasks } = useTaskStore();
+
+  const [search, setSearch] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -17,26 +18,101 @@ export default function TasksScreen() {
     }, [])
   );
 
+  const filteredTasks = tasks.filter((task: any) =>
+    task.title.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const activeTasks = filteredTasks.filter((t: any) => !t.completed);
+  const completedTasks = filteredTasks.filter((t: any) => t.completed);
+
   return (
-    <ScrollView>
-      <Text>Tasks Screen</Text>
+    <View style={styles.container}>
 
-      {tasks.map((task) => (
-        <View
-          key={task.id}
-          style={{ flexDirection: "row", alignItems: "center" }}
-        >
-          <Text style={{ flex: 1 }}>{task.title}</Text>
+      <Text style={styles.title}>Tasks</Text>
 
-          <Button
-            title="Delete"
-            onPress={() => {
-              deleteTask(task.id);
+      <Button
+        title="New Task"
+        onPress={() => navigation.navigate("NewTask")}
+      />
+
+      {/* Search Bar */}
+      <TextInput
+        placeholder="Search tasks..."
+        value={search}
+        onChangeText={setSearch}
+        style={styles.search}
+      />
+
+      {/* My Tasks */}
+      <Text style={styles.sectionTitle}>
+        My Tasks
+      </Text>
+
+      <FlatList
+        data={activeTasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TaskCard
+            task={item}
+            onDelete={(id: number) => {
+              deleteTask(id);
               loadTasks();
             }}
+            refresh={loadTasks}
           />
-        </View>
-      ))}
-    </ScrollView>
+        )}
+      />
+
+      {/* Completed Tasks */}
+      <Text style={styles.sectionTitle}>
+        Completed Tasks
+      </Text>
+
+      <FlatList
+        data={completedTasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TaskCard
+            task={item}
+            onDelete={(id: number) => {
+              deleteTask(id);
+              loadTasks();
+            }}
+            refresh={loadTasks}
+          />
+        )}
+      />
+
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+
+  container: {
+    flex: 1,
+    paddingTop: 10
+  },
+
+  title: {
+    fontSize: 22,
+    margin: 10,
+    fontWeight: "bold"
+  },
+
+  search: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 10,
+    marginHorizontal: 10,
+    marginTop: 10
+  },
+
+  sectionTitle: {
+    margin: 10,
+    fontSize: 16,
+    fontWeight: "600"
+  }
+
+});

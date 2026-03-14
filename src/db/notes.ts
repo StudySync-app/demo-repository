@@ -1,17 +1,27 @@
-import { db } from "./database";
+import { db } from "./client";
+import { notes } from "./schema";
+import { eq } from "drizzle-orm";
+
+export type Note = {
+  id: number;
+  title: string;
+  content?: string | null;
+  createdAt?: string | null;
+  synced?: boolean | null;
+};
 
 export function addNote(title: string, content: string) {
-  db.execSync(`
-    INSERT INTO notes (title, content, created_at)
-    VALUES ('${title}', '${content}', datetime('now'));
-  `);
+  db.insert(notes).values({
+    title: title,
+    content: content,
+    synced: false
+  }).run();
 }
 
-export function getNotes() {
-  const result = db.getAllSync("SELECT * FROM notes;");
-  return result;
+export function getNotes(): Note[] {
+  return db.select().from(notes).all() as Note[];
 }
 
 export function deleteNote(id: number) {
-  db.execSync(`DELETE FROM notes WHERE id = ${id};`);
+  db.delete(notes).where(eq(notes.id, id)).run();
 }
