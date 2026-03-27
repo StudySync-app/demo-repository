@@ -1,107 +1,195 @@
-import React, { useState, useCallback } from "react";
-import { View, Text, Button, Image, ScrollView, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  Button,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet
+} from "react-native";
+
 import * as ImagePicker from "expo-image-picker";
-import { useFocusEffect } from "@react-navigation/native";
+import * as DocumentPicker from "expo-document-picker";
+import { Video, ResizeMode, Audio } from "expo-av";
 
 import { addMedia, getMedia, deleteMedia } from "../db/media";
-import { COLORS, SPACING, RADIUS } from "../constants/theme";
 
 export default function MediaScreen() {
 
-  const [mediaItems, setMediaItems] = useState<any[]>([]);
+  const [media, setMedia] = useState<any[]>([]);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    loadMedia();
+  }, []);
 
   const loadMedia = () => {
     const data = getMedia();
-    setMediaItems(data);
+    setMedia(data);
   };
 
-  const pickImage = async () => {
-
+  // 📸 IMAGE + VIDEO PICKER
+  const pickMedia = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      quality: 1,
     });
 
     if (!result.canceled) {
-
       const asset = result.assets[0];
+      const type = asset.type || "image";
 
       addMedia(
-        asset.fileName || "image",
+        asset.fileName || `media_${Date.now()}`,
         asset.uri,
-        "image"
+        type
       );
 
       loadMedia();
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
+  // 🎧 AUDIO PICKER
+  const pickAudio = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "audio/*",
+    });
+
+    if (!result.canceled && result.assets) {
+      const file = result.assets[0];
+
+      addMedia(
+        file.name || `audio_${Date.now()}`,
+        file.uri,
+        "audio"
+      );
+
       loadMedia();
-    }, [])
-  );
+    }
+  };
+
+  // 🔊 PLAY AUDIO
+  const playAudio = async (uri: string) => {
+    const { sound } = await Audio.Sound.createAsync({ uri });
+    setSound(sound);
+    await sound.playAsync();
+  };
+
+  useEffect(() => {
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
 
       <Text style={styles.title}>Media</Text>
 
-      <Button title="Upload Image" onPress={pickImage} />
+      <Button title="Upload Image / Video" onPress={pickMedia} />
+      <Button title="Upload Audio" onPress={pickAudio} />
 
-      {mediaItems.map((item) => (
+      <FlatList
+        data={media}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
 
-        <View key={item.id} style={styles.card}>
+          <View style={styles.card}>
 
-          <Image
-            source={{ uri: item.uri }}
-            style={styles.image}
-          />
+            {/* IMAGE */}
+            {item.type === "image" && (
+              <Image
+                source={{ uri: item.uri }}
+                style={styles.media}
+              />
+            )}
 
-          <Button
-            title="Delete"
-            onPress={() => {
-              deleteMedia(item.id);
-              loadMedia();
-            }}
-          />
+            {/* VIDEO */}
+            {item.type === "video" && (
+              <Video
+                source={{ uri: item.uri }}
+                style={styles.media}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+              />
+            )}
 
-        </View>
+            {/* AUDIO */}
+            {item.type === "audio" && (
+              <TouchableOpacity onPress={() => playAudio(item.uri)}>
+                <Text style={styles.audio}>
+                  🎧 {item.name || "Play Audio"}
+                </Text>
+              </TouchableOpacity>
+            )}
 
-      ))}
+            {/* DELETE BUTTON */}
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => {
+                deleteMedia(item.id);
+                loadMedia();
+              }}
+            >
+              <Text style={styles.deleteText}>Delete</Text>
+            </TouchableOpacity>
 
-    </ScrollView>
+          </View>
+
+        )}
+      />
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-    padding: SPACING.screen,
-    backgroundColor: COLORS.background
+    padding: 16,
+    backgroundColor: "#0F172A"
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "bold",
-    marginBottom: 20,
-    color: COLORS.text
+    color: "#fff",
+    marginBottom: 10
   },
 
   card: {
-    backgroundColor: COLORS.card,
-    padding: SPACING.card,
-    borderRadius: RADIUS.card,
-    marginTop: 12,
-    elevation: 2
+    marginVertical: 10,
+    backgroundColor: "#1E293B",
+    padding: 10,
+    borderRadius: 12
   },
 
-  image: {
+  media: {
     width: "100%",
     height: 200,
-    borderRadius: 8,
-    marginBottom: 10
-  }
+    borderRadius: 10
+  },
 
+  audio: {
+    color: "#38BDF8",
+    fontSize: 16,
+    marginVertical: 10
+  },
+
+  deleteBtn: {
+    marginTop: 10,
+    backgroundColor: "#EF4444",
+    padding: 8,
+    borderRadius: 8,
+    alignItems: "center"
+  },
+
+  deleteText: {
+    color: "#fff",
+    fontWeight: "600"
+  }
 });
