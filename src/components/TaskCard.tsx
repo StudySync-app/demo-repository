@@ -1,13 +1,21 @@
 import React from "react";
-import { View, Text, Button, StyleSheet, Switch } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  TouchableOpacity
+} from "react-native";
+
 import {
   toggleTaskCompleted,
-  updateTaskPriority,
-  updateTaskStatus
+  updateTaskPriority
 } from "../db/tasks";
-import { COLORS, RADIUS } from "../constants/theme";
 
-export default function TaskCard({ task, onDelete, refresh }: any) {
+import { COLORS, RADIUS } from "../constants/theme";
+import { shareContent } from "../lib/share";
+
+export default function TaskCard({ task, onDelete, onEdit, refresh }: any) {
 
   const handleToggle = (value: boolean) => {
     toggleTaskCompleted(task.id, value);
@@ -22,9 +30,10 @@ export default function TaskCard({ task, onDelete, refresh }: any) {
   return (
     <View style={styles.card}>
 
+      {/* LEFT CONTENT */}
       <View style={{ flex: 1 }}>
 
-        {/* Task Title */}
+        {/* TITLE */}
         <Text
           style={[
             styles.title,
@@ -34,191 +43,214 @@ export default function TaskCard({ task, onDelete, refresh }: any) {
           {task.title}
         </Text>
 
-        {/* Priority Badge */}
-        <Text
+        {/* PRIORITY BADGE */}
+        <View
           style={[
-            styles.priorityBadge,
-            task.priority === "high" && styles.urgent,
-            task.priority === "normal" && styles.important,
-            task.priority === "low" && styles.minor
+            styles.badge,
+            task.priority === "high" && styles.high,
+            task.priority === "normal" && styles.normal,
+            task.priority === "low" && styles.low
           ]}
         >
-          {task.priority === "high"
-            ? "URGENT"
-            : task.priority === "normal"
-            ? "IMPORTANT"
-            : "MINOR"}
-        </Text>
-
-        {/* Status */}
-        <Text style={styles.meta}>
-          Status: {task.status || "todo"}
-        </Text>
-
-        {/* Due Date */}
-        <Text style={styles.meta}>
-          Due: {task.dueDate ? new Date(task.dueDate).toDateString() : "No date"}
-        </Text>
-
-        {/* Priority buttons */}
-        <View style={styles.priorityRow}>
-
-          <Text
-            style={styles.priorityBtn}
-            onPress={() => changePriority("low")}
-          >
-            Low
+          <Text style={styles.badgeText}>
+            {task.priority?.toUpperCase()}
           </Text>
-
-          <Text
-            style={styles.priorityBtn}
-            onPress={() => changePriority("normal")}
-          >
-            Normal
-          </Text>
-
-          <Text
-            style={styles.priorityBtn}
-            onPress={() => changePriority("high")}
-          >
-            High
-          </Text>
-
         </View>
 
-        {/* Status buttons */}
-        <View style={styles.statusRow}>
+        {/* META */}
+        <Text style={styles.meta}>
+          Due: {task.dueDate
+            ? new Date(task.dueDate).toDateString()
+            : "No date"}
+        </Text>
 
-          <Text
-            style={styles.statusBtn}
-            onPress={() => {
-              updateTaskStatus(task.id, "todo");
-              refresh();
-            }}
-          >
-            Todo
-          </Text>
+        <Text style={styles.meta}>
+          Folder: {task.folderId ?? "None"}
+        </Text>
 
-          <Text
-            style={styles.statusBtn}
-            onPress={() => {
-              updateTaskStatus(task.id, "progress");
-              refresh();
-            }}
-          >
-            Progress
-          </Text>
-
-          <Text
-            style={styles.statusBtn}
-            onPress={() => {
-              updateTaskStatus(task.id, "done");
-              refresh();
-            }}
-          >
-            Done
-          </Text>
-            
-            <Text style={styles.meta}>
-              Folder: {task.folderId ?? "None"}
-            </Text>
-
+        {/* PRIORITY SELECT */}
+        <View style={styles.row}>
+          {["low", "normal", "high"].map((p) => (
+            <TouchableOpacity
+              key={p}
+              style={[
+                styles.smallBtn,
+                task.priority === p && styles.selectedBtn
+              ]}
+              onPress={() => changePriority(p)}
+            >
+              <Text
+                style={[
+                  styles.smallBtnText,
+                  task.priority === p && styles.selectedText
+                ]}
+              >
+                {p}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
       </View>
 
-      {/* Toggle Complete */}
-      <Switch
-        value={!!task.completed}
-        onValueChange={handleToggle}
-      />
+      {/* RIGHT SIDE */}
+      <View style={styles.actions}>
 
-      {/* Delete Button */}
-      <Button
-        title="Delete"
-        onPress={() => {
-          onDelete(task.id);
-          refresh();
-        }}
-      />
+        <Switch
+          value={!!task.completed}
+          onValueChange={handleToggle}
+        />
 
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => {
+            onDelete(task.id);
+            refresh();
+          }}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={onEdit}>
+  <Text style={{ color: "#4A90E2", fontSize: 16 }}>✏️</Text>
+</TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.shareBtn}
+          onPress={() =>
+            shareContent(
+              task.title,
+              `Priority: ${task.priority}`
+            )
+          }
+        >
+          <Text style={styles.shareText}>Share</Text>
+        </TouchableOpacity>
+
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
 
+  /* CARD */
   card: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
     padding: 16,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: RADIUS.card,
-    backgroundColor: COLORS.card,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    borderRadius: 14,
+    backgroundColor: "#fff",
     elevation: 3
   },
 
+  /* TITLE */
   title: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: COLORS.text
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111",
+    marginBottom: 6
   },
 
   completed: {
     textDecorationLine: "line-through",
-    color: "#888"
+    color: "#999"
   },
 
+  /* META */
   meta: {
     fontSize: 12,
-    color: COLORS.subtext,
-    marginTop: 4
+    color: "#777",
+    marginBottom: 6
   },
 
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    fontSize: 12,
-    color: "#fff",
+  /* BADGE */
+  badge: {
     alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 6
+  },
+
+  badgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "600"
+  },
+
+  high: {
+    backgroundColor: "#FF3B30" // red
+  },
+
+  normal: {
+    backgroundColor: "#FF9500" // orange
+  },
+
+  low: {
+    backgroundColor: "#34C759" // green
+  },
+
+  /* ROW */
+  row: {
+    flexDirection: "row",
     marginTop: 6
   },
 
-  urgent: {
-    backgroundColor: COLORS.urgent
+  /* SMALL BUTTONS */
+  smallBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: "#f0f0f0",
+    marginRight: 8
   },
 
-  important: {
-    backgroundColor: COLORS.important
+  smallBtnText: {
+    fontSize: 12,
+    color: "#333"
   },
 
-  minor: {
-    backgroundColor: COLORS.minor
+  selectedBtn: {
+    backgroundColor: COLORS.primary
   },
 
-  priorityRow: {
-    flexDirection: "row",
+  selectedText: {
+    color: "#fff"
+  },
+
+  /* ACTIONS */
+  actions: {
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+
+  deleteBtn: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     marginTop: 8
   },
 
-  priorityBtn: {
-    marginRight: 10,
-    color: COLORS.primary,
-    fontWeight: "500"
+  deleteText: {
+    color: "#fff",
+    fontSize: 12
   },
 
-  statusRow: {
-    flexDirection: "row",
+  shareBtn: {
+    backgroundColor: "#5856D6",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
     marginTop: 6
   },
 
-  statusBtn: {
-    marginRight: 10,
-    color: "#FF9500",
-    fontWeight: "500"
+  shareText: {
+    color: "#fff",
+    fontSize: 12
   }
 
 });

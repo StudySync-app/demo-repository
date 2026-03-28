@@ -7,6 +7,7 @@ export type MediaItem = {
   name?: string | null;
   uri?: string | null;
   type?: string | null;
+  folderId?: number | null;
   createdAt?: string | null;
 };
 
@@ -15,7 +16,8 @@ export function addMedia(name: string, uri: string, type: string) {
     name,
     uri,
     type,
-    synced: false
+    synced: false,
+    createdAt: new Date().toISOString()
   }).run();
 }
 

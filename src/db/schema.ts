@@ -32,7 +32,7 @@ export const media = sqliteTable("media", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name"),
   uri: text("uri"),
-  type: text("type"),
+  type: text("type"), // "image" | "video" | "audio"
   folderId: integer("folder_id"),
   synced: integer("synced", { mode: "boolean" }).default(false),
   createdAt: text("created_at"),
@@ -45,7 +45,7 @@ export const tags = sqliteTable("tags", {
 
 export const contentTags = sqliteTable("content_tags", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  contentType: text("content_type"),
+  contentType: text("content_type"), // "task" | "note" | "media"
   contentId: integer("content_id"),
   tagId: integer("tag_id"),
 });
