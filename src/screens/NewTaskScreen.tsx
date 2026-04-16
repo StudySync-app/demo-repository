@@ -6,7 +6,7 @@ import { addTask } from "../db/tasks";
 import { getFolders } from "../db/folders";
 import { getTags, attachTag } from "../db/tags";
 
-import { scheduleTaskReminder } from "../lib/notifications";
+import { scheduleTaskReminder } from "../lib/notification";
 
 export default function NewTaskScreen({ navigation }: any) {
 
