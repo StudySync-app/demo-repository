@@ -1,5 +1,12 @@
 import React, { useCallback, useState } from "react";
-import { Text, View, FlatList, Button, TextInput, StyleSheet } from "react-native";
+import {
+  Text,
+  View,
+  FlatList,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 
 import TaskCard from "../components/TaskCard";
@@ -9,7 +16,6 @@ import { useTaskStore } from "../store/useTaskStore";
 export default function TasksScreen({ navigation }: any) {
 
   const { tasks, loadTasks } = useTaskStore();
-
   const [search, setSearch] = useState("");
 
   useFocusEffect(
@@ -30,23 +36,22 @@ export default function TasksScreen({ navigation }: any) {
 
       <Text style={styles.title}>Tasks</Text>
 
-      <Button
-        title="New Task"
+      <TouchableOpacity
+        style={styles.newBtn}
         onPress={() => navigation.navigate("NewTask")}
-      />
+      >
+        <Text style={styles.newText}>+ New Task</Text>
+      </TouchableOpacity>
 
-      {/* Search Bar */}
       <TextInput
         placeholder="Search tasks..."
+        placeholderTextColor="#fff"
         value={search}
         onChangeText={setSearch}
         style={styles.search}
       />
 
-      {/* My Tasks */}
-      <Text style={styles.sectionTitle}>
-        My Tasks
-      </Text>
+      <Text style={styles.sectionTitle}>My Tasks</Text>
 
       <FlatList
         data={activeTasks}
@@ -58,15 +63,13 @@ export default function TasksScreen({ navigation }: any) {
               deleteTask(id);
               loadTasks();
             }}
+            onEdit={() => navigation.navigate("NewTask", { task: item })}
             refresh={loadTasks}
           />
         )}
       />
 
-      {/* Completed Tasks */}
-      <Text style={styles.sectionTitle}>
-        Completed Tasks
-      </Text>
+      <Text style={styles.sectionTitle}>Completed Tasks</Text>
 
       <FlatList
         data={completedTasks}
@@ -78,6 +81,7 @@ export default function TasksScreen({ navigation }: any) {
               deleteTask(id);
               loadTasks();
             }}
+            onEdit={() => navigation.navigate("NewTask", { task: item })}
             refresh={loadTasks}
           />
         )}
@@ -88,31 +92,42 @@ export default function TasksScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-    paddingTop: 10
+    padding: 16,
+    backgroundColor: "#0F172A"
   },
 
   title: {
     fontSize: 22,
-    margin: 10,
-    fontWeight: "bold"
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 10
+  },
+
+  newBtn: {
+    backgroundColor: "#1E2A38",
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12
+  },
+
+  newText: {
+    color: "#fff",
+    fontWeight: "600"
   },
 
   search: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
+    backgroundColor: "#1E2A38",
+    borderRadius: 10,
     padding: 10,
-    marginHorizontal: 10,
-    marginTop: 10
+    color: "#fff",
+    marginBottom: 12
   },
 
   sectionTitle: {
-    margin: 10,
-    fontSize: 16,
+    color: "#fff",
+    marginVertical: 8,
     fontWeight: "600"
   }
-
 });

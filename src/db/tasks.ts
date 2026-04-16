@@ -117,3 +117,15 @@ export function getUpcomingTasks() {
       t.dueDate > today
   );
 }
+
+export function updateTask(
+  id: number,
+  title: string,
+  priority: string,
+  dueDate: string
+) {
+  db.update(tasks)
+    .set({ title, priority, dueDate })
+    .where(eq(tasks.id, id))
+    .run();
+}

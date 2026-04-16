@@ -1,52 +1,75 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity
+} from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import { addTask } from "../db/tasks";
+import { addTask, updateTask } from "../db/tasks";
 import { getFolders } from "../db/folders";
 import { getTags, attachTag } from "../db/tags";
-
 import { scheduleTaskReminder } from "../lib/notification";
 
-export default function NewTaskScreen({ navigation }: any) {
+export default function NewTaskScreen({ navigation, route }: any) {
 
-  const [title, setTitle] = useState("");
-  const [priority, setPriority] = useState("normal");
+  const editingTask = route?.params?.task;
 
-  const [dueDate, setDueDate] = useState(new Date());
+  const [title, setTitle] = useState(editingTask?.title || "");
+  const [priority, setPriority] = useState(editingTask?.priority || "normal");
+  const [dueDate, setDueDate] = useState(
+    editingTask?.dueDate ? new Date(editingTask.dueDate) : new Date()
+  );
+
   const [showPicker, setShowPicker] = useState(false);
 
   const [folders, setFolders] = useState<any[]>([]);
-  const [folderId, setFolderId] = useState<number | null>(null);
+  const [folderId, setFolderId] = useState<number | null>(
+    editingTask?.folderId || null
+  );
 
   const [tags, setTags] = useState<any[]>([]);
   const [selectedTag, setSelectedTag] = useState<number | null>(null);
 
   useEffect(() => {
-    const folderData = getFolders();
-    setFolders(folderData);
-
-    const tagData = getTags();
-    setTags(tagData);
+    setFolders(getFolders());
+    setTags(getTags());
   }, []);
 
-  const saveTask = () => {
+  const saveTask = async () => {
     if (!title.trim()) return;
 
-    const newTaskId = addTask(
-      title,
-      priority,
-      dueDate.toISOString(),
-      folderId
-    );
+    let taskId;
 
-    // attach tag
-    if (selectedTag) {
-      attachTag("task", newTaskId, selectedTag);
+    if (editingTask) {
+      updateTask(
+        editingTask.id,
+        title,
+        priority,
+        dueDate.toISOString()
+      );
+      taskId = editingTask.id;
+    } else {
+      taskId = addTask(
+        title,
+        priority,
+        dueDate.toISOString(),
+        folderId
+      );
     }
 
-    // schedule reminder
-    scheduleTaskReminder(title, dueDate);
+    if (selectedTag) {
+      attachTag("task", taskId, selectedTag);
+    }
+
+    // SAFE reminder
+    try {
+      await scheduleTaskReminder(title, dueDate);
+    } catch {
+      console.log("Reminder not supported in Expo Go");
+    }
 
     navigation.goBack();
   };
@@ -55,7 +78,6 @@ export default function NewTaskScreen({ navigation }: any) {
     <View style={styles.container}>
 
       <Text style={styles.label}>Task Title</Text>
-
       <TextInput
         style={styles.input}
         value={title}
@@ -64,129 +86,94 @@ export default function NewTaskScreen({ navigation }: any) {
       />
 
       <Text style={styles.label}>Priority</Text>
-
       <View style={styles.row}>
-        <Text style={styles.option} onPress={() => setPriority("low")}>
-          Low
-        </Text>
-
-        <Text style={styles.option} onPress={() => setPriority("normal")}>
-          Normal
-        </Text>
-
-        <Text style={styles.option} onPress={() => setPriority("high")}>
-          High
-        </Text>
+        {["low", "normal", "high"].map((p) => (
+          <TouchableOpacity
+            key={p}
+            style={[
+              styles.option,
+              priority === p && styles.selected
+            ]}
+            onPress={() => setPriority(p)}
+          >
+            <Text style={styles.optionText}>{p}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <Text style={styles.label}>Due Date</Text>
-
-      <Button
-        title={dueDate.toDateString()}
-        onPress={() => setShowPicker(true)}
-      />
+      <TouchableOpacity onPress={() => setShowPicker(true)}>
+        <Text style={{ color: "#007AFF" }}>
+          {dueDate.toDateString()}
+        </Text>
+      </TouchableOpacity>
 
       {showPicker && (
         <DateTimePicker
           value={dueDate}
           mode="date"
-          display="default"
-          onChange={(event, selectedDate) => {
+          onChange={(e, d) => {
             setShowPicker(false);
-            if (selectedDate) setDueDate(selectedDate);
+            if (d) setDueDate(d);
           }}
         />
       )}
 
-      <Text style={styles.label}>Select Folder</Text>
-
-      {folders.map((folder) => (
-        <Text
-          key={folder.id}
-          style={[
-            styles.folderOption,
-            folderId === folder.id && styles.selectedFolder
-          ]}
-          onPress={() => setFolderId(folder.id)}
-        >
-          {folder.name}
+      <TouchableOpacity style={styles.saveBtn} onPress={saveTask}>
+        <Text style={{ color: "#fff" }}>
+          {editingTask ? "Update Task" : "Save Task"}
         </Text>
-      ))}
-
-      <Text style={styles.label}>Select Tag</Text>
-
-      {tags.map((tag) => (
-        <Text
-          key={tag.id}
-          style={[
-            styles.tagOption,
-            selectedTag === tag.id && styles.selectedTag
-          ]}
-          onPress={() => setSelectedTag(tag.id)}
-        >
-          {tag.name}
-        </Text>
-      ))}
-
-      <Button title="Save Task" onPress={saveTask} />
+      </TouchableOpacity>
 
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
-    padding: 20
+    padding: 20,
+    backgroundColor: "#0F172A"
   },
 
   label: {
-    fontSize: 16,
+    color: "#fff",
     marginBottom: 6
   },
 
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
+    backgroundColor: "#1E2A38",
     padding: 10,
     borderRadius: 8,
-    marginBottom: 20
+    marginBottom: 16,
+    color: "#fff"
   },
 
   row: {
     flexDirection: "row",
-    marginBottom: 20
+    marginBottom: 16
   },
 
   option: {
-    marginRight: 15,
-    color: "#007AFF",
-    fontWeight: "600"
+    padding: 10,
+    backgroundColor: "#1E2A38",
+    borderRadius: 8,
+    marginRight: 8
   },
 
-  folderOption: {
-    padding: 8,
-    backgroundColor: "#eee",
-    marginBottom: 6,
-    borderRadius: 6
+  selected: {
+    backgroundColor: "#007AFF"
   },
 
-  selectedFolder: {
+  optionText: {
+    color: "#fff"
+  },
+
+  saveBtn: {
     backgroundColor: "#007AFF",
-    color: "#fff"
-  },
-
-  tagOption: {
-    padding: 8,
-    backgroundColor: "#eee",
-    marginBottom: 6,
-    borderRadius: 6
-  },
-
-  selectedTag: {
-    backgroundColor: "#34C759",
-    color: "#fff"
+    padding: 14,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 20
   }
-
 });

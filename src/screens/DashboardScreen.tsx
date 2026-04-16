@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import useNetwork from "../hooks/useNetwork";
 
 import {
   getTaskStats,
@@ -22,6 +23,7 @@ export default function DashboardScreen() {
   const [todayTasks, setTodayTasks] = useState<any[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<any[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
+  const isOnline = useNetwork();
 
   useEffect(() => {
     const data = getTaskStats();
@@ -36,6 +38,12 @@ export default function DashboardScreen() {
     <View style={styles.container}>
 
       <Text style={styles.title}>Dashboard</Text>
+
+      <View style={styles.syncBox}>
+        <Text style={styles.syncText}>
+          {isOnline ? "Cloud Sync: Online" : "Cloud Sync: Offline"}
+        </Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.statLabel}>Total Tasks</Text>
@@ -109,6 +117,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 5,
     color: COLORS.text
-  }
+  },
+
+  syncBox: {
+  backgroundColor: "#eef6ff",
+  padding: 10,
+  borderRadius: 8,
+  marginBottom: 15
+  },
+
+  syncText: {
+    fontWeight: "600"
+  },
 
 });
