@@ -5,7 +5,7 @@ const db = openDatabaseSync("app.db");
 export function initDatabase() {
   db.execSync(`
     
-    CREATE TABLE IF NOT EXrISTS folders (
+    CREATE TABLE IF NOT EXISTS folders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
