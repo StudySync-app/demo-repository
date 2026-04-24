@@ -6,7 +6,7 @@ import DashboardScreen from "../screens/DashboardScreen";
 import TasksScreen from "../screens/TasksScreen";
 import NotesScreen from "../screens/NotesScreen";
 import MediaScreen from "../screens/MediaScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import SettingsTabs from "./SettingsTabs";
 //import FoldersScreen from "../screens/FoldersScreen";
 
 import { COLORS } from "../constants/theme";
@@ -39,7 +39,7 @@ export default function MainTabs() {
       <Tab.Screen name="To dos" component={TasksScreen} />
       <Tab.Screen name="Notes" component={NotesScreen} />
       <Tab.Screen name="Media" component={MediaScreen} />
-      <Tab.Screen name="Me" component={SettingsScreen} />
+      <Tab.Screen name="Me" component={SettingsTabs} />
     </Tab.Navigator>
   );
 }

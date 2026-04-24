@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import useNetwork from "../hooks/useNetwork";
 
 import {
@@ -35,52 +35,164 @@ export default function DashboardScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.topRow}>
+        <View style={styles.statusBar} />
+      </View>
 
-      <Text style={styles.title}>Dashboard</Text>
+      <View style={styles.headerRow}>
+        <View style={styles.brandRow}>
+          <View style={styles.brandIcon} />
+          <Text style={styles.brandTitle}>StudySync</Text>
+        </View>
+        <View style={styles.actionIcon} />
+      </View>
 
       <View style={styles.syncBox}>
-        <Text style={styles.syncText}>
-          {isOnline ? "Cloud Sync: Online" : "Cloud Sync: Offline"}
-        </Text>
+        <Text style={styles.syncText}>{isOnline ? "Cloud Sync: Online" : "Cloud Sync: Offline"}</Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Total Tasks</Text>
-        <Text style={styles.statValue}>{stats.total}</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My files</Text>
+          <View style={styles.sectionIcon} />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.badgeIcon} />
+            </View>
+            <Text style={styles.cardTitle}>My to dos</Text>
+            <Text style={styles.cardSubtitle}>now</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>1 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My media</Text>
+            <Text style={styles.cardSubtitle}>10 mins ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My notes</Text>
+            <Text style={styles.cardSubtitle}>now</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>1 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Completed Tasks</Text>
-        <Text style={styles.statValue}>{stats.completed}</Text>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Tagged files</Text>
+          <View style={styles.sectionIcon} />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My to dos</Text>
+            <Text style={styles.cardSubtitle}>2 mins ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.badgeIcon} />
+            </View>
+            <Text style={styles.cardTitle}>My media</Text>
+            <Text style={styles.cardSubtitle}>10 mins ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My notes</Text>
+            <Text style={styles.cardSubtitle}>2 days ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Pending Tasks</Text>
-        <Text style={styles.statValue}>{stats.pending}</Text>
-      </View>
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My folders</Text>
+          <View style={styles.sectionIcon} />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My to dos</Text>
+            <Text style={styles.cardSubtitle}>2 mins ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Completion Rate</Text>
-        <Text style={styles.statValue}>{stats.completionRate}%</Text>
-      </View>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.badgeIcon} />
+            </View>
+            <Text style={styles.cardTitle}>My media</Text>
+            <Text style={styles.cardSubtitle}>10 mins ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
 
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Today's Tasks</Text>
-        <Text style={styles.statValue}>{todayTasks.length}</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.smallIcon} />
+              <View style={styles.smallIconSecondary} />
+            </View>
+            <Text style={styles.cardTitle}>My notes</Text>
+            <Text style={styles.cardSubtitle}>2 days ago</Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardCount}>0 item(s)</Text>
+              <View style={styles.footerIcon} />
+            </View>
+          </View>
+        </View>
       </View>
-
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Overdue Tasks</Text>
-        <Text style={styles.statValue}>{overdueTasks.length}</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.statLabel}>Upcoming Tasks</Text>
-        <Text style={styles.statValue}>{upcomingTasks.length}</Text>
-      </View>
-
-    </View>
+    </ScrollView>
   );
 }
 
@@ -88,46 +200,172 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
+    backgroundColor: "#050816"
+  },
+
+  contentContainer: {
     padding: SPACING.screen,
-    backgroundColor: COLORS.background
+    paddingBottom: 40
   },
 
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-    color: COLORS.text
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24
   },
 
-  card: {
-    padding: SPACING.card,
-    marginBottom: 12,
-    backgroundColor: COLORS.card,
-    borderRadius: RADIUS.card,
-    elevation: 2
+  timeText: {
+    color: "#FFFFFF",
+    fontSize: 14
   },
 
-  statLabel: {
-    fontSize: 14,
-    color: COLORS.subtext
+  statusBar: {
+    width: 70,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#1F2A43"
   },
 
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: 5,
-    color: COLORS.text
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 18
+  },
+
+  brandRow: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+
+  brandIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: "#3C61A4",
+    marginRight: 12
+  },
+
+  brandTitle: {
+    color: "#FFFFFF",
+    fontSize: 28,
+    fontWeight: "bold"
+  },
+
+  actionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: "#1F2A43"
   },
 
   syncBox: {
-  backgroundColor: "#eef6ff",
-  padding: 10,
-  borderRadius: 8,
-  marginBottom: 15
+    backgroundColor: "#1F2A43",
+    padding: 14,
+    borderRadius: 20,
+    marginBottom: 24
   },
 
   syncText: {
+    color: "#FFFFFF",
     fontWeight: "600"
   },
 
+  section: {
+    marginBottom: 24
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12
+  },
+
+  sectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600"
+  },
+
+  sectionIcon: {
+    width: 12,
+    height: 17,
+    borderRadius: 4,
+    backgroundColor: "#1F2A43"
+  },
+
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+
+  card: {
+    flex: 1,
+    backgroundColor: "#1A2535",
+    borderRadius: 20,
+    padding: 16,
+    marginRight: 12,
+    minHeight: 150
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16
+  },
+
+  smallIcon: {
+    width: 36,
+    height: 32,
+    borderRadius: 14,
+    backgroundColor: "#3C61A4"
+  },
+
+  smallIconSecondary: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#1F2A43"
+  },
+
+  badgeIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#4B76E7"
+  },
+
+  cardTitle: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 6
+  },
+
+  cardSubtitle: {
+    color: "#BDBDBD",
+    fontSize: 12,
+    marginBottom: 16
+  },
+
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+
+  cardCount: {
+    color: "#BDBDBD",
+    fontSize: 10
+  },
+
+  footerIcon: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#4B76E7"
+  }
 });

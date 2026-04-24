@@ -30,7 +30,7 @@ export default function App() {
       <Stack.Navigator>
 
         <Stack.Screen
-          name="Home"
+          name="MainTabs"
           component={MainTabs}
           options={{ headerShown: false }}
         />
@@ -40,6 +40,7 @@ export default function App() {
           component={NewTaskScreen}
           options={{ title: "Create Task" }}
         />
+
 
       </Stack.Navigator>
 

@@ -1,32 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  Button,
-  FlatList,
-  Image,
   TouchableOpacity,
   StyleSheet
 } from "react-native";
-
 import * as ImagePicker from "expo-image-picker";
 
-import { addMedia, getMedia, deleteMedia } from "../db/media";
-
 export default function MediaScreen() {
+  const [selectedType, setSelectedType] = useState("All");
 
-  const [media, setMedia] = useState<any[]>([]);
-
-  useEffect(() => {
-    loadMedia();
-  }, []);
-
-  const loadMedia = () => {
-    const data = getMedia();
-    setMedia(data);
-  };
-
-  // 📸 IMAGE + VIDEO PICKER
   const pickMedia = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
@@ -35,108 +18,129 @@ export default function MediaScreen() {
     });
 
     if (!result.canceled) {
-      const asset = result.assets[0];
-      const type = asset.type || "image";
-
-      addMedia(
-        asset.fileName || `media_${Date.now()}`,
-        asset.uri,
-        type
-      );
-
-      loadMedia();
+      // Handle selection if needed
+      console.log("Picked media", result.assets[0]);
     }
   };
 
-
+  const filters = ["Audios", "Videos", "Images", "All"];
 
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
+      <View style={styles.overlay} />
 
-      <Text style={styles.title}>Media</Text>
+      <View style={styles.sheet}>
+        <Text style={styles.heading}>Import your media files here.</Text>
+        <Text style={styles.subtitle}>
+          Choose any of the options below.
+        </Text>
 
-      <Button title="Upload Image" onPress={pickMedia} />
-
-      <FlatList
-        data={media}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-
-          <View style={styles.card}>
-
-            {/* IMAGE */}
-            {item.type === "image" && (
-              <Image
-                source={{ uri: item.uri }}
-                style={styles.media}
-              />
-            )}
-
-
-
-            {/* DELETE BUTTON */}
+        <View style={styles.filterRow}>
+          {filters.map((filter) => (
             <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => {
-                deleteMedia(item.id);
-                loadMedia();
-              }}
+              key={filter}
+              style={[
+                styles.filterButton,
+                selectedType === filter && styles.filterButtonActive,
+              ]}
+              activeOpacity={0.85}
+              onPress={() => setSelectedType(filter)}
             >
-              <Text style={styles.deleteText}>Delete</Text>
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedType === filter && styles.filterTextActive,
+                ]}
+              >
+                {filter}
+              </Text>
             </TouchableOpacity>
+          ))}
+        </View>
 
-          </View>
-
-        )}
-      />
-
+        <TouchableOpacity
+          style={styles.importButton}
+          activeOpacity={0.85}
+          onPress={pickMedia}
+        >
+          <Text style={styles.importText}>Import</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#0F172A"
+    backgroundColor: "#050816",
+    justifyContent: "flex-end",
   },
-
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#fff",
-    marginBottom: 10
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
   },
-
-  card: {
-    marginVertical: 10,
-    backgroundColor: "#1E293B",
-    padding: 10,
-    borderRadius: 12
+  sheet: {
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    backgroundColor: "#0F172A",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.28,
+    shadowRadius: 30,
+    elevation: 20,
   },
-
-  media: {
-    width: "100%",
-    height: 200,
-    borderRadius: 10
+  heading: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 10,
   },
-
-  audio: {
-    color: "#38BDF8",
+  subtitle: {
+    color: "#A3AED0",
     fontSize: 16,
-    marginVertical: 10
+    lineHeight: 24,
+    marginBottom: 24,
   },
-
-  deleteBtn: {
-    marginTop: 10,
-    backgroundColor: "#EF4444",
-    padding: 8,
-    borderRadius: 8,
-    alignItems: "center"
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 28,
   },
-
-  deleteText: {
-    color: "#fff",
-    fontWeight: "600"
-  }
+  filterButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: "#1E293B",
+    borderRadius: 16,
+    minWidth: 72,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  filterButtonActive: {
+    backgroundColor: "#374151",
+  },
+  filterText: {
+    color: "#E2E8F0",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  filterTextActive: {
+    color: "#FFFFFF",
+  },
+  importButton: {
+    marginTop: 4,
+    backgroundColor: "#2563EB",
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  importText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });

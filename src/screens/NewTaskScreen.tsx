@@ -4,7 +4,8 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -18,7 +19,9 @@ export default function NewTaskScreen({ navigation, route }: any) {
   const editingTask = route?.params?.task;
 
   const [title, setTitle] = useState(editingTask?.title || "");
+  const [description, setDescription] = useState(editingTask?.description || "");
   const [priority, setPriority] = useState(editingTask?.priority || "normal");
+  const [progress, setProgress] = useState(editingTask?.progress || "todo");
   const [dueDate, setDueDate] = useState(
     editingTask?.dueDate ? new Date(editingTask.dueDate) : new Date()
   );
@@ -75,36 +78,124 @@ export default function NewTaskScreen({ navigation, route }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.topBar}>
+        <View style={styles.topIcon} />
+        <View style={styles.topIconActive} />
+      </View>
 
-      <Text style={styles.label}>Task Title</Text>
-      <TextInput
-        style={styles.input}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Enter task title"
-      />
+      <Text style={styles.screenTitle}>Set your to-do</Text>
 
-      <Text style={styles.label}>Priority</Text>
-      <View style={styles.row}>
-        {["low", "normal", "high"].map((p) => (
+      <View style={styles.inputCard}>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Title"
+          placeholderTextColor="#7B88A2"
+        />
+        <TextInput
+          style={[styles.input, styles.descriptionInput]}
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Description"
+          placeholderTextColor="#7B88A2"
+          multiline
+          numberOfLines={4}
+        />
+      </View>
+
+      <Text style={styles.sectionLabel}>Priority status</Text>
+      <View style={styles.priorityRow}>
+        {[
+          { key: "urgent", label: "Urgent" },
+          { key: "important", label: "Important" },
+          { key: "minor", label: "Minor" }
+        ].map((item) => (
           <TouchableOpacity
-            key={p}
-            style={[
-              styles.option,
-              priority === p && styles.selected
-            ]}
-            onPress={() => setPriority(p)}
+            key={item.key}
+            style={styles.priorityOption}
+            onPress={() => setPriority(item.key)}
           >
-            <Text style={styles.optionText}>{p}</Text>
+            <View
+              style={[
+                styles.radioCircle,
+                priority === item.key && styles.radioCircleSelected
+              ]}
+            />
+            <Text style={styles.priorityLabel}>{item.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.label}>Due Date</Text>
-      <TouchableOpacity onPress={() => setShowPicker(true)}>
-        <Text style={{ color: "#007AFF" }}>
-          {dueDate.toDateString()}
+      <Text style={styles.sectionLabel}>Progress status</Text>
+      <View style={styles.segmentRow}>
+        {[
+          { key: "todo", label: "To get done" },
+          { key: "ongoing", label: "Ongoing" },
+          { key: "paused", label: "Paused" }
+        ].map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            style={[
+              styles.segmentButton,
+              progress === item.key && styles.segmentButtonSelected
+            ]}
+            onPress={() => setProgress(item.key)}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                progress === item.key && styles.segmentTextSelected
+              ]}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={styles.sectionLabel}>Select Due Date</Text>
+      <TouchableOpacity
+        style={styles.dateCard}
+        onPress={() => setShowPicker(true)}
+        activeOpacity={0.9}
+      >
+        <View style={styles.dateHeader}>
+          <Text style={styles.dateMonth}>
+            {dueDate.toLocaleString("default", { month: "long" }).toUpperCase()} {dueDate.getFullYear()}
+          </Text>
+          <View style={styles.dateNav}>
+            <View style={styles.navDot} />
+            <View style={styles.navDot} />
+          </View>
+        </View>
+        <View style={styles.weekDays}>
+          {['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].map((day) => (
+            <Text key={day} style={styles.weekDayText}>{day}</Text>
+          ))}
+        </View>
+        <View style={styles.dateRow}>
+          {Array.from({ length: 7 }).map((_, index) => {
+            const dateNumber = 15 + index;
+            const selected = dateNumber === 18;
+            return (
+              <View
+                key={dateNumber}
+                style={[styles.dateCircle, selected && styles.dateCircleSelected]}
+              >
+                <Text style={[styles.dateNumber, selected && styles.dateNumberSelected]}>
+                  {dateNumber}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.saveBtn} onPress={saveTask}>
+        <Text style={styles.saveText}>
+          {editingTask ? "Update Task" : "Save Task"}
         </Text>
       </TouchableOpacity>
 
@@ -116,64 +207,220 @@ export default function NewTaskScreen({ navigation, route }: any) {
             setShowPicker(false);
             if (d) setDueDate(d);
           }}
+          display="calendar"
         />
       )}
-
-      <TouchableOpacity style={styles.saveBtn} onPress={saveTask}>
-        <Text style={{ color: "#fff" }}>
-          {editingTask ? "Update Task" : "Save Task"}
-        </Text>
-      </TouchableOpacity>
-
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#0F172A"
   },
 
-  label: {
-    color: "#fff",
-    marginBottom: 6
+  content: {
+    padding: 20,
+    paddingBottom: 40
+  },
+
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24
+  },
+
+  topIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#1E2A38"
+  },
+
+  topIconActive: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#3C61A4"
+  },
+
+  screenTitle: {
+    color: "#FFFFFF",
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 24
+  },
+
+  inputCard: {
+    backgroundColor: "#111827",
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 24
   },
 
   input: {
-    backgroundColor: "#1E2A38",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 16,
-    color: "#fff"
-  },
-
-  row: {
-    flexDirection: "row",
+    backgroundColor: "#0F172A",
+    color: "#FFFFFF",
+    padding: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#263147",
     marginBottom: 16
   },
 
-  option: {
-    padding: 10,
+  descriptionInput: {
+    minHeight: 100,
+    textAlignVertical: "top"
+  },
+
+  sectionLabel: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    marginBottom: 14,
+    fontWeight: "600"
+  },
+
+  priorityRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24
+  },
+
+  priorityOption: {
+    alignItems: "center",
+    flex: 1
+  },
+
+  radioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "#4B76E7",
+    marginBottom: 8
+  },
+
+  radioCircleSelected: {
+    backgroundColor: "#4B76E7"
+  },
+
+  priorityLabel: {
+    color: "#FFFFFF",
+    fontSize: 12
+  },
+
+  segmentRow: {
+    flexDirection: "row",
     backgroundColor: "#1E2A38",
-    borderRadius: 8,
-    marginRight: 8
+    borderRadius: 18,
+    padding: 6,
+    marginBottom: 24
   },
 
-  selected: {
-    backgroundColor: "#007AFF"
+  segmentButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: "center"
   },
 
-  optionText: {
-    color: "#fff"
+  segmentButtonSelected: {
+    backgroundColor: "#111827"
+  },
+
+  segmentText: {
+    color: "#FFFFFF",
+    fontSize: 13
+  },
+
+  segmentTextSelected: {
+    color: "#4B76E7",
+    fontWeight: "700"
+  },
+
+  dateCard: {
+    backgroundColor: "#111827",
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 32
+  },
+
+  dateHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 18
+  },
+
+  dateMonth: {
+    color: "#4B76E7",
+    fontSize: 14,
+    fontWeight: "700"
+  },
+
+  dateNav: {
+    flexDirection: "row",
+    gap: 6
+  },
+
+  navDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#1E2A38"
+  },
+
+  weekDays: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14
+  },
+
+  weekDayText: {
+    color: "#7B88A2",
+    fontSize: 11,
+    width: 30,
+    textAlign: "center"
+  },
+
+  dateRow: {
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+
+  dateCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 20,
+    backgroundColor: "#0F172A",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+
+  dateCircleSelected: {
+    backgroundColor: "#4B76E7"
+  },
+
+  dateNumber: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600"
+  },
+
+  dateNumberSelected: {
+    color: "#0F172A"
   },
 
   saveBtn: {
-    backgroundColor: "#007AFF",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 20
+    backgroundColor: "#4B76E7",
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: "center"
+  },
+
+  saveText: {
+    color: "#FFFFFF",
+    fontWeight: "700"
   }
 });
