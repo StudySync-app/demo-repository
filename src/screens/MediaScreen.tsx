@@ -7,6 +7,8 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
+import { addMedia } from "../db/media";
+
 export default function MediaScreen() {
   const [selectedType, setSelectedType] = useState("All");
 
@@ -18,8 +20,10 @@ export default function MediaScreen() {
     });
 
     if (!result.canceled) {
-      // Handle selection if needed
-      console.log("Picked media", result.assets[0]);
+      const asset = result.assets[0];
+      const type = asset.type === "video" ? "video" : "image";
+      const name = asset.fileName?.trim() || `Media ${Date.now()}`;
+      addMedia(name, asset.uri, type);
     }
   };
 

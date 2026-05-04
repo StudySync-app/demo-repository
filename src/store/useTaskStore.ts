@@ -9,6 +9,8 @@ type Task = {
   priority: string | null;
   status: string | null;
   dueDate: string | null;
+  completed?: boolean | null;
+  folderId?: number | null;
 };
 
 type TaskStore = {

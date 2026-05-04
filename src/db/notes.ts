@@ -8,13 +8,15 @@ export type Note = {
   content?: string | null;
   createdAt?: string | null;
   synced?: boolean | null;
+  folderId?: number | null;
 };
 
 export function addNote(title: string, content: string) {
   db.insert(notes).values({
     title: title,
     content: content,
-    synced: false
+    synced: false,
+    createdAt: new Date().toISOString()
   }).run();
 }
 

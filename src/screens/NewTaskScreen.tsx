@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import { addTask, updateTask } from "../db/tasks";
+import { addTask, updateTaskFull } from "../db/tasks";
 import { getFolders } from "../db/folders";
 import { getTags, attachTag } from "../db/tags";
 import { scheduleTaskReminder } from "../lib/notification";
@@ -47,20 +47,20 @@ export default function NewTaskScreen({ navigation, route }: any) {
     let taskId;
 
     if (editingTask) {
-      updateTask(
-        editingTask.id,
+      updateTaskFull(editingTask.id, {
         title,
         priority,
-        dueDate.toISOString()
-      );
+        dueDate: dueDate.toISOString(),
+        description: description.trim() || null,
+        status: progress,
+        folderId
+      });
       taskId = editingTask.id;
     } else {
-      taskId = addTask(
-        title,
-        priority,
-        dueDate.toISOString(),
-        folderId
-      );
+      taskId = addTask(title, priority, dueDate.toISOString(), folderId, {
+        description: description.trim() || null,
+        status: progress
+      });
     }
 
     if (selectedTag) {

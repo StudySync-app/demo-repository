@@ -19,16 +19,19 @@ export function addTask(
   title: string,
   priority: string,
   dueDate?: string,
-  folderId?: number | null
+  folderId?: number | null,
+  extra?: { description?: string | null; status?: string | null }
 ) {
   const result = db.insert(tasks).values({
     title,
     priority,
     dueDate,
     folderId,
-    status: "todo",
+    status: extra?.status ?? "todo",
+    description: extra?.description ?? null,
     completed: false,
-    synced: false
+    synced: false,
+    createdAt: new Date().toISOString()
   }).run();
 
   return result.lastInsertRowId;
@@ -126,6 +129,30 @@ export function updateTask(
 ) {
   db.update(tasks)
     .set({ title, priority, dueDate })
+    .where(eq(tasks.id, id))
+    .run();
+}
+
+export function updateTaskFull(
+  id: number,
+  payload: {
+    title: string;
+    priority: string;
+    dueDate: string;
+    description?: string | null;
+    status?: string | null;
+    folderId?: number | null;
+  }
+) {
+  db.update(tasks)
+    .set({
+      title: payload.title,
+      priority: payload.priority,
+      dueDate: payload.dueDate,
+      description: payload.description ?? null,
+      status: payload.status ?? "todo",
+      folderId: payload.folderId
+    })
     .where(eq(tasks.id, id))
     .run();
 }

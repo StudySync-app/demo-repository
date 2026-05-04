@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import MainTabs from "./src/navigation/MainTabs";
 import NewTaskScreen from "./src/screens/NewTaskScreen";
@@ -25,6 +26,7 @@ export default function App() {
 }, []);
 
   return (
+    <SafeAreaProvider>
     <NavigationContainer>
 
       <Stack.Navigator>
@@ -45,5 +47,6 @@ export default function App() {
       </Stack.Navigator>
 
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
