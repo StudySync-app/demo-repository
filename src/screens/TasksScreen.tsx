@@ -239,7 +239,7 @@ export default function TasksScreen() {
         <View
           style={[
             styles.header,
-            { paddingTop: insets.top > 0 ? 6 : 10, paddingHorizontal: Math.max(8, scrollPad - 4) }
+            { marginTop: insets.top, paddingHorizontal: Math.max(8, scrollPad - 4) }
           ]}
         >
           <TouchableOpacity
@@ -564,7 +564,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 8,
-    minHeight: 48
+  // Increase minHeight to ensure text isn't cramped
+    minHeight: 56,
   },
 
   headerTitle: {
