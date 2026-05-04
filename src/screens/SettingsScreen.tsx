@@ -1,13 +1,8 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity
-} from "react-native";
+import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
 
 type SettingsStackParamList = {
@@ -26,11 +21,11 @@ const settingsItems: Array<{
   icon: string;
   route: SettingsRouteName;
 }> = [
-  { title: "My account", icon: "user", route: "MyAccount" },
-  { title: "Personalization", icon: "paint", route: "Personalization" },
-  { title: "Notifications", icon: "bell", route: "Notifications" },
-  { title: "Security", icon: "shield", route: "Security" },
-  { title: "StudySync AI", icon: "spark", route: "StudySync" }
+  { title: "My account", icon: "person", route: "MyAccount" },
+  { title: "Personalization", icon: "palette", route: "Personalization" },
+  { title: "Notifications", icon: "notifications", route: "Notifications" },
+  { title: "Security", icon: "security", route: "Security" },
+  { title: "StudySync AI", icon: "psychology", route: "StudySync" }
 ];
 
 export default function SettingsScreen() {
@@ -43,16 +38,13 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Settings</Text>
         <View style={styles.searchIcon} />
       </View>
-
-      <View style={styles.heroCard}>
-        <View style={styles.heroText}>
-          <Text style={styles.heroTitle}>Tailor your</Text>
-          <Text style={styles.heroTitle}>experience here</Text>
-          <Text style={styles.heroTitle}>at StudySync</Text>
-        </View>
-        <View style={styles.heroGraphic} />
-      </View>
-
+      
+        <Image
+          style={styles.heroGraphic}
+          source={require("../../assets/settings_banner.jpg")}
+         resizeMode="cover"
+        />
+     
       <View style={styles.settingsList}>
         {settingsItems.map((item) => (
           <TouchableOpacity
@@ -61,9 +53,10 @@ export default function SettingsScreen() {
             activeOpacity={0.8}
             onPress={() => navigation.push(item.route)}
           >
-            <View style={styles.settingIcon} />
+            <View style={styles.settingIcon}>
+              <MaterialIcons name={item.icon} size={20} color="white" />
+            </View>
             <Text style={styles.settingText}>{item.title}</Text>
-            <View style={styles.chevron} />
           </TouchableOpacity>
         ))}
       </View>
@@ -134,10 +127,11 @@ const styles = StyleSheet.create({
   },
 
   heroGraphic: {
-    width: 110,
-    height: 110,
-    borderRadius: 28,
-    backgroundColor: "#1E2A38"
+  width: '100%',        // This forces it to align with the buttons below
+  height: 112,           // Reduced height so it's not "too large"
+  borderRadius: 20,     // Matches the rounding of your buttons
+  marginBottom: 24,     // Consistent spacing
+  backgroundColor: "#111827",
   },
 
   settingsList: {
@@ -159,7 +153,9 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 12,
     backgroundColor: "#1F2A43",
-    marginRight: 14
+    marginRight: 14,
+    justifyContent: "center",
+    alignItems: "center"
   },
 
   settingText: {
@@ -167,14 +163,5 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600"
-  },
-
-  chevron: {
-    width: 20,
-    height: 20,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: "#4B76E7",
-    transform: [{ rotate: "45deg" }]
   }
 });
