@@ -414,14 +414,6 @@ export default function TasksScreen() {
               )}
             </View>
           ))}
-          <TouchableOpacity
-            style={styles.openPickerBtn}
-            onPress={() => setShowPicker(true)}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="event" size={18} color={ACCENT} />
-            <Text style={styles.openPickerText}>Open system calendar</Text>
-          </TouchableOpacity>
         </View>
 
         <TextInput

@@ -10,6 +10,7 @@ import SettingsTabs from "./SettingsTabs";
 //import FoldersScreen from "../screens/FoldersScreen";
 
 import { COLORS } from "../constants/theme";
+import HomeTabs from "./HomeTabs";
 
 const Tab = createBottomTabNavigator();
 
@@ -35,7 +36,7 @@ export default function MainTabs() {
         tabBarInactiveTintColor: "gray",
       })}
     >
-      <Tab.Screen name="Home" component={DashboardScreen} />
+      <Tab.Screen name="Home" component={HomeTabs} />
       <Tab.Screen name="To dos" component={TasksScreen} />
       <Tab.Screen name="Notes" component={NotesScreen} />
       <Tab.Screen name="Media" component={MediaScreen} />
