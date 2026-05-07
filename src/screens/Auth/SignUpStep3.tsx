@@ -1,54 +1,92 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/FontAwesome";
-import IconMat from "react-native-vector-icons/MaterialIcons";
+// Switch to @expo/vector-icons for consistency
+import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
 
-type RootStackParamList = { SignUpStep3: { fullName: string; email: string; role: string }; MainTabs: undefined };
+type RootStackParamList = { 
+  SignUpStep3: { fullName: string; email: string; role: string }; 
+  MainTabs: undefined 
+};
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SignUpStep3">;
 type RoutePropType = RouteProp<RootStackParamList, "SignUpStep3">;
 type Props = { navigation: NavigationProp; route: RoutePropType };
 
-// FIX: Use 'any' for props to avoid strict type errors
-export default function SignUpStep3({ navigation, route }: any) {
+export default function SignUpStep3({ navigation, route }: Props) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
 
   const handleSignUp = async () => {
-    if (password !== confirm) return alert("Passwords do not match");
+    if (password !== confirm) {
+      return Alert.alert("Error", "Passwords do not match");
+    }
+    
+    // Deconstruct from route.params provided by Step 2
     const { email, role, fullName } = route.params;
     
-    // FIX: Corrected the options syntax here (added 'data:')
     const { error } = await supabase.auth.signUp({ 
       email, 
       password, 
-      options: { data: { full_name: fullName, role } } 
+      options: { 
+        data: { 
+          full_name: fullName, 
+          role: role 
+        } 
+      } 
     });
     
     if (!error) {
-      alert("Account created! Check your email.");
-      navigation.replace("MainTabs");
-    } else alert(error.message);
+      Alert.alert(
+        "Success!", 
+        "Account created! Please check your email for a confirmation link.",
+        [{ text: "OK", onPress: () => navigation.replace("MainTabs") }]
+      );
+    } else {
+      Alert.alert("Sign Up Error");
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <IconMat name="arrow-back" size={24} color="#fff" onPress={() => navigation.goBack()} />
+        <IconMat 
+          name="arrow-back" 
+          size={24} 
+          color="#fff" 
+          onPress={() => navigation.goBack()} 
+        />
         <Text style={styles.logoText}>StudySync</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.mainTitle}>Together, let's turn your goals into progress.</Text>
         <Text style={styles.subtitle}>
           You're almost there. Set your password and confirm it to complete your account.
         </Text>
 
         <View style={styles.inputGroup}>
-          <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#555" value={password} onChangeText={setPassword} secureTextEntry />
-          <TextInput style={styles.input} placeholder="Confirm password" placeholderTextColor="#555" value={confirm} onChangeText={setConfirm} secureTextEntry />
+          <TextInput 
+            style={styles.input} 
+            placeholder="Password" 
+            placeholderTextColor="#555" 
+            value={password} 
+            onChangeText={setPassword} 
+            secureTextEntry 
+          />
+          <TextInput 
+            style={styles.input} 
+            placeholder="Confirm password" 
+            placeholderTextColor="#555" 
+            value={confirm} 
+            onChangeText={setConfirm} 
+            secureTextEntry 
+          />
         </View>
 
         <TouchableOpacity style={[styles.btn, styles.btnOutline]} onPress={handleSignUp}>
@@ -75,7 +113,17 @@ const styles = StyleSheet.create({
   mainTitle: { color: "#ffffff", fontSize: 32, fontWeight: "bold", lineHeight: 40, marginBottom: 16 },
   subtitle: { color: "#a1a1aa", fontSize: 14, lineHeight: 22, marginBottom: 40 },
   inputGroup: { marginBottom: 20, gap: 12 },
-  input: { backgroundColor: "#0a0a0a", borderWidth: 1, borderColor: "#27272a", color: "#fff", height: 50, borderRadius: 25, paddingHorizontal: 24, textAlign: "center", fontSize: 16 },
+  input: { 
+    backgroundColor: "#0a0a0a", 
+    borderWidth: 1, 
+    borderColor: "#27272a", 
+    color: "#fff", 
+    height: 50, 
+    borderRadius: 25, 
+    paddingHorizontal: 24, 
+    textAlign: "center", 
+    fontSize: 16 
+  },
   btn: { width: "100%", height: 50, borderRadius: 25, justifyContent: "center", alignItems: "center", marginBottom: 12 },
   btnOutline: { backgroundColor: "transparent", borderWidth: 1, borderColor: "#3f3f46" },
   btnOutlineText: { color: "#ffffff", fontSize: 16, fontWeight: "bold" },

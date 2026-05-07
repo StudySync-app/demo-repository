@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { FontAwesome as Icon } from '@expo/vector-icons';
 
 type RootStackParamList = {
   Welcome: undefined;
@@ -20,7 +20,10 @@ export default function WelcomeScreen({ navigation }: Props) {
         <Text style={styles.logoText}>StudySync</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.mainTitle}>Together, let's turn your goals into progress.</Text>
         <Text style={styles.subtitle}>
           Your all-in-one space for{'\n'}
@@ -30,11 +33,19 @@ export default function WelcomeScreen({ navigation }: Props) {
           one.
         </Text>
 
-        <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={() => navigation.navigate("Login")}>
+        <TouchableOpacity 
+          style={[styles.btn, styles.btnPrimary]} 
+          onPress={() => navigation.navigate("Login")}
+          activeOpacity={0.8}
+        >
           <Text style={styles.btnPrimaryText}>Sign in</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.btn, styles.btnOutline]} onPress={() => navigation.navigate("SignUpStep1")}>
+        <TouchableOpacity 
+          style={[styles.btn, styles.btnOutline]} 
+          onPress={() => navigation.navigate("SignUpStep1")}
+          activeOpacity={0.7}
+        >
           <Text style={styles.btnOutlineText}>Sign up</Text>
         </TouchableOpacity>
 
@@ -62,12 +73,12 @@ const styles = StyleSheet.create({
   mainTitle: { color: "#ffffff", fontSize: 34, fontWeight: "800", lineHeight: 40, marginBottom: 18 },
   subtitle: { color: "#9ca3af", fontSize: 15, lineHeight: 21, marginBottom: 36 },
   btn: { width: "100%", height: 52, borderRadius: 99, justifyContent: "center", alignItems: "center", marginBottom: 12 },
-  btnPrimary: { backgroundColor: "#3b82f6" },
+  btnPrimary: { backgroundColor: "#3b82f6" }, // Blue accent
   btnPrimaryText: { color: "#000000", fontSize: 16, fontWeight: "600" },
   btnOutline: { backgroundColor: "transparent", borderWidth: 1, borderColor: "#27272a" },
   btnOutlineText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
   linkButton: { alignSelf: "center", marginVertical: 14 },
-  linkText: { color: "#ffffff", fontSize: 13, textDecorationLine: "none" },
+  linkText: { color: "#ffffff", fontSize: 13 },
   footer: { alignItems: "center", marginTop: 48, marginBottom: 24 },
   footerText: { color: "#6b7280", fontSize: 11, fontWeight: "500", textTransform: "uppercase", letterSpacing: 1, marginBottom: 16 },
   socialIcons: { flexDirection: "row", alignItems: "center" },

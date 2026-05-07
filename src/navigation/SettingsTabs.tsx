@@ -3,11 +3,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import SettingsScreen from "../screens/SettingsScreen";
 // Add "Sub" to all the paths below:
-import MyAccountScreen from "../screens/Settings Sub Screens/MyAccountScreen";
-import PersonalizationScreen from "../screens/Settings Sub Screens/PersonalizationScreen";
-import NotificationsScreen from "../screens/Settings Sub Screens/NotificationsScreen";
-import SecurityScreens from "../screens/Settings Sub Screens/SecurityScreens";
-import StudySyncScreen from "../screens/Settings Sub Screens/StudySyncScreen";
+import MyAccountScreen from "../screens/Settings Screens/MyAccountScreen";
+import PersonalizationScreen from "../screens/Settings Screens/PersonalizationScreen";
+import NotificationsScreen from "../screens/Settings Screens/NotificationsScreen";
+import SecurityScreens from "../screens/Settings Screens/SecurityScreens";
+import StudySyncScreen from "../screens/Settings Screens/StudySyncScreen";
 
 const Stack = createNativeStackNavigator();
 

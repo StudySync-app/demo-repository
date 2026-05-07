@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
-import IconMat from "react-native-vector-icons/MaterialIcons";
+import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
 
 type RootStackParamList = { Login: undefined; MainTabs: undefined; SignUpStep1: undefined };
@@ -15,18 +14,23 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleLogin = async () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) navigation.replace("MainTabs");
-    else alert(error.message);
+    if (!error) {
+      navigation.replace("MainTabs");
+    } else {
+      // Use Alert.alert for better mobile experience
+      Alert.alert("Login Error");
+    }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        {/* Type-safe icons from @expo/vector-icons */}
         <IconMat name="arrow-back" size={22} color="#fff" onPress={() => navigation.goBack()} />
         <Text style={styles.logoText}>StudySync</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <Text style={styles.mainTitle}>Together, let's turn your goals into progress.</Text>
         <Text style={styles.subtitle}>
           Your personal space for{'\n'}
@@ -35,8 +39,23 @@ export default function LoginScreen({ navigation }: Props) {
         </Text>
 
         <View style={styles.inputGroup}>
-          <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#52525b" value={email} onChangeText={setEmail} autoCapitalize="none" />
-          <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#52525b" value={password} onChangeText={setPassword} secureTextEntry />
+          <TextInput 
+            style={styles.input} 
+            placeholder="Email" 
+            placeholderTextColor="#52525b" 
+            value={email} 
+            onChangeText={setEmail} 
+            autoCapitalize="none" 
+            keyboardType="email-address"
+          />
+          <TextInput 
+            style={styles.input} 
+            placeholder="Password" 
+            placeholderTextColor="#52525b" 
+            value={password} 
+            onChangeText={setPassword} 
+            secureTextEntry 
+          />
         </View>
 
         <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleLogin}>

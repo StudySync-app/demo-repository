@@ -1,8 +1,8 @@
 // DUMMY FILE FOR UI TESTING - NO NETWORK CALLS
 export const supabase = {
   auth: {
-    signInWithPassword: async () => ({ error: null, user: {} }),
-    signUp: async () => ({ error: null, user: {} }),
+    signInWithPassword: async (p0: { email: string; password: string; }) => ({ error: null, user: {} }),
+    signUp: async (p0: { email: string; password: string; options: { data: { full_name: string; role: string; }; }; }) => ({ error: null, user: {} }),
     signOut: async () => null,
     getUser: async () => ({ error: null, user: {} }),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
