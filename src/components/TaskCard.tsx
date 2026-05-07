@@ -1,256 +1,133 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-import {
-  toggleTaskCompleted,
-  updateTaskPriority
-} from "../db/tasks";
+interface TaskCardProps {
+  title: string;
+  subtitle: string;
+  dueDate: string;
+  priority: string;
+  priorityColor?: string;
+  progress: string;
+  progressColor?: string;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onToggleCheck?: () => void;
+  isCompleted?: boolean;
+}
 
-import { COLORS, RADIUS } from "../constants/theme";
-import { shareContent } from "../lib/share";
-
-export default function TaskCard({ task, onDelete, onEdit, refresh }: any) {
-
-  const handleToggle = (value: boolean) => {
-    toggleTaskCompleted(task.id, value);
-    refresh();
-  };
-
-  const changePriority = (priority: string) => {
-    updateTaskPriority(task.id, priority);
-    refresh();
-  };
-
+export const TaskCard = ({
+  title,
+  subtitle,
+  dueDate,
+  priority,
+  priorityColor = '#EAB308',
+  progress,
+  progressColor = '#22C55E',
+  onEdit,
+  onDelete,
+  onToggleCheck,
+  isCompleted = false
+}: TaskCardProps) => {
   return (
-    <View style={styles.card}>
-
-      {/* LEFT CONTENT */}
-      <View style={{ flex: 1 }}>
-
-        {/* TITLE */}
-        <Text
-          style={[
-            styles.title,
-            task.completed && styles.completed
-          ]}
-        >
-          {task.title}
-        </Text>
-
-        {/* PRIORITY BADGE */}
-        <View
-          style={[
-            styles.badge,
-            task.priority === "high" && styles.high,
-            task.priority === "normal" && styles.normal,
-            task.priority === "low" && styles.low
-          ]}
-        >
-          <Text style={styles.badgeText}>
-            {task.priority?.toUpperCase()}
-          </Text>
+    <View style={[styles.card, isCompleted && styles.cardCompleted]}>
+      <View style={styles.cardHeader}>
+        <View style={styles.cardTitleRow}>
+          <TouchableOpacity onPress={onToggleCheck}>
+            <MaterialIcons 
+              name={isCompleted ? "check-box" : "check-box-outline-blank"} 
+              size={24} 
+              color={isCompleted ? "#22C55E" : "#FFF"} 
+              style={styles.checkIcon} 
+            />
+          </TouchableOpacity>
+          <View>
+            <Text style={[styles.taskTitle, isCompleted && styles.completedText]}>{title}</Text>
+            <Text style={styles.taskSub}>{subtitle}</Text>
+          </View>
         </View>
-
-        {/* META */}
-        <Text style={styles.meta}>
-          Due: {task.dueDate
-            ? new Date(task.dueDate).toDateString()
-            : "No date"}
-        </Text>
-
-        <Text style={styles.meta}>
-          Folder: {task.folderId ?? "None"}
-        </Text>
-
-        {/* PRIORITY SELECT */}
-        <View style={styles.row}>
-          {["low", "normal", "high"].map((p) => (
-            <TouchableOpacity
-              key={p}
-              style={[
-                styles.smallBtn,
-                task.priority === p && styles.selectedBtn
-              ]}
-              onPress={() => changePriority(p)}
-            >
-              <Text
-                style={[
-                  styles.smallBtnText,
-                  task.priority === p && styles.selectedText
-                ]}
-              >
-                {p}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        
+        <View style={styles.actionRow}>
+          <TouchableOpacity onPress={onEdit}>
+            <MaterialIcons 
+              name={isCompleted ? "settings-backup-restore" : "edit"} 
+              size={22} 
+              color="#FFF" 
+              style={styles.iconSpacing} 
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete}>
+            <MaterialIcons name="delete" size={22} color="#FFF" />
+          </TouchableOpacity>
         </View>
-
       </View>
 
-      {/* RIGHT SIDE */}
-      <View style={styles.actions}>
-
-        <Switch
-          value={!!task.completed}
-          onValueChange={handleToggle}
-        />
-
-        <TouchableOpacity
-          style={styles.deleteBtn}
-          onPress={() => {
-            onDelete(task.id);
-            refresh();
-          }}
-        >
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onEdit}>
-  <Text style={{ color: "#4A90E2", fontSize: 16 }}>✏️</Text>
-</TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.shareBtn}
-          onPress={() =>
-            shareContent(
-              task.title,
-              `Priority: ${task.priority}`
-            )
-          }
-        >
-          <Text style={styles.shareText}>Share</Text>
-        </TouchableOpacity>
-
+      <View style={styles.cardFooter}>
+        <Text style={styles.metaText}>Due: {dueDate}</Text>
+        <Text style={[styles.metaText, { color: priorityColor }]}>Priority: {priority}</Text>
+        <Text style={[styles.metaText, { color: progressColor }]}>Progress: {progress}</Text>
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-
-  /* CARD */
   card: {
+    backgroundColor: "#111827",
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+    marginBottom: 16,
+  },
+  cardCompleted: {
+    backgroundColor: "#064E3B", // Card turns green when completed
+    borderColor: "#10B981",
+  },
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 14,
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    elevation: 3
+    alignItems: "flex-start",
+    marginBottom: 20,
   },
-
-  /* TITLE */
-  title: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111",
-    marginBottom: 6
-  },
-
-  completed: {
-    textDecorationLine: "line-through",
-    color: "#999"
-  },
-
-  /* META */
-  meta: {
-    fontSize: 12,
-    color: "#777",
-    marginBottom: 6
-  },
-
-  /* BADGE */
-  badge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 6
-  },
-
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "600"
-  },
-
-  high: {
-    backgroundColor: "#FF3B30" // red
-  },
-
-  normal: {
-    backgroundColor: "#FF9500" // orange
-  },
-
-  low: {
-    backgroundColor: "#34C759" // green
-  },
-
-  /* ROW */
-  row: {
+  cardTitleRow: {
     flexDirection: "row",
-    marginTop: 6
-  },
-
-  /* SMALL BUTTONS */
-  smallBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    backgroundColor: "#f0f0f0",
-    marginRight: 8
-  },
-
-  smallBtnText: {
-    fontSize: 12,
-    color: "#333"
-  },
-
-  selectedBtn: {
-    backgroundColor: COLORS.primary
-  },
-
-  selectedText: {
-    color: "#fff"
-  },
-
-  /* ACTIONS */
-  actions: {
     alignItems: "center",
-    justifyContent: "space-between"
   },
-
-  deleteBtn: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginTop: 8
+  checkIcon: {
+    marginRight: 12,
   },
-
-  deleteText: {
-    color: "#fff",
-    fontSize: 12
+  taskTitle: {
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "700",
   },
-
-  shareBtn: {
-    backgroundColor: "#5856D6",
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginTop: 6
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: '#D1FAE5', // Adjusted for better visibility on green
   },
-
-  shareText: {
-    color: "#fff",
-    fontSize: 12
-  }
-
+  taskSub: {
+    color: "#94A3B8",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconSpacing: {
+    marginRight: 15,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+    paddingTop: 15,
+  },
+  metaText: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "600",
+  },
 });

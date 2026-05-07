@@ -2,6 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import DashboardScreen from "../screens/DashboardScreen";
+import TasksScreen from "../screens/TasksScreen";
 import FileTasksManagerScreen from "../screens/Manager Screens/FileTasksManagerScreen";
 import FileNotesManageScreen from "../screens/Manager Screens/FileNotesManageScreen";
 import FolderedTasksManagerScreen from "../screens/Manager Screens/FolderedTasksManagerScreen";
@@ -18,6 +19,7 @@ export default function HomeTabs() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="TasksScreen" component={TasksScreen} />
       <Stack.Screen name="FileTaskManager" component={FileTasksManagerScreen} />
       <Stack.Screen name="FileNotesManager" component={FileNotesManageScreen} />
       <Stack.Screen name="FolderedTaskManager" component={FolderedTasksManagerScreen} />
