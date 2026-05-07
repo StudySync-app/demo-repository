@@ -6,27 +6,24 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
   Alert,
   Platform,
   KeyboardAvoidingView,
   useWindowDimensions
 } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
   addTask,
-  deleteTask,
   updateTaskFull,
-  toggleTaskCompleted,
   type Task
 } from "../db/tasks";
-import { getFolders } from "../db/folders";
+import { addFolder } from "../db/folders"; // Ensure this exists to handle DB insertion
 import { scheduleTaskReminder } from "../lib/notification";
 import { useTaskStore } from "../store/useTaskStore";
+import { CreateFolderSheet } from "../components/CreateFolderSheet";
 
 const ACCENT = "#4B76E7";
 const BG = "#0A0E1A";
@@ -69,17 +66,13 @@ export default function TasksScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
-  const { tasks, loadTasks } = useTaskStore();
+  const { loadTasks } = useTaskStore();
 
   const isCompact = windowWidth < 380;
   const scrollPad = isCompact ? 12 : 16;
   const dateCardPad = isCompact ? 12 : 16;
-  /** Calendar cell size so 7 columns fit without horizontal overflow */
   const calendarInnerW = windowWidth - scrollPad * 2 - dateCardPad * 2;
-  const cellSize = Math.max(
-    26,
-    Math.min(42, Math.floor((calendarInnerW - 6) / 7))
-  );
+  const cellSize = Math.max(26, Math.min(42, Math.floor((calendarInnerW - 6) / 7)));
   const headerSide = Math.min(88, Math.max(56, Math.floor(windowWidth * 0.2)));
 
   const [title, setTitle] = useState("");
@@ -93,32 +86,17 @@ export default function TasksScreen() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [showPicker, setShowPicker] = useState(false);
-  const [search, setSearch] = useState("");
-
-  const clearForm = useCallback(() => {
-    setTitle("");
-    setDescription("");
-    setPriority("important");
-    setProgress("todo");
-    setDueDate(new Date());
-    setEditingId(null);
-    setFolderId(null);
-    const d = new Date();
-    setViewMonth(new Date(d.getFullYear(), d.getMonth(), 1));
-  }, []);
+  
+  // Modal visibility state
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const applyTask = useCallback((task: Task) => {
     setTitle(task.title ?? "");
     setDescription(task.description ?? "");
     const p = task.priority as string | null;
-    setPriority(
-      p === "urgent" || p === "important" || p === "minor" ? p : "important"
-    );
+    setPriority(p === "urgent" || p === "important" || p === "minor" ? p : "important");
     const st = task.status as string | null;
-    setProgress(
-      st === "ongoing" || st === "paused" ? st : "todo"
-    );
+    setProgress(st === "ongoing" || st === "paused" ? st : "todo");
     setDueDate(task.dueDate ? new Date(task.dueDate) : new Date());
     setEditingId(task.id);
     setFolderId(task.folderId ?? null);
@@ -135,12 +113,6 @@ export default function TasksScreen() {
       navigation.setParams({ task: undefined });
     }
   }, [route.params?.task, applyTask, navigation]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadTasks();
-    }, [loadTasks])
-  );
 
   const saveTask = async () => {
     if (!title.trim()) {
@@ -168,41 +140,27 @@ export default function TasksScreen() {
 
     try {
       await scheduleTaskReminder(title.trim(), dueDate);
-    } catch {
-      /* optional */
-    }
+    } catch { /* ignored */ }
 
     await loadTasks();
-    clearForm();
+    navigation.goBack();
   };
 
-  const openFolderPicker = () => {
-    const folders = getFolders();
-    const buttons: {
-      text: string;
-      style?: "cancel";
-      onPress?: () => void;
-    }[] = [
-      { text: "No folder", onPress: () => setFolderId(null) },
-      ...folders.map((f) => ({
-        text: f.name,
-        onPress: () => setFolderId(f.id)
-      })),
-      { text: "Cancel", style: "cancel" }
-    ];
-    Alert.alert("Folder", "Choose a folder for this to-do", buttons);
-  };
-
-  const selectCalendarDay = (day: number) => {
-    const y = viewMonth.getFullYear();
-    const m = viewMonth.getMonth();
-    setDueDate(new Date(y, m, day));
-  };
-
-  const monthGrid = useMemo(
-    () => buildMonthGrid(viewMonth.getFullYear(), viewMonth.getMonth()),
-    [viewMonth]
-  );
+  // src/screens/TasksScreen.tsx
+const handleCreateFolder = async (name: string, category: string) => {
+  try {
+    // This captures the number returned by the updated addFolder function
+    const newFolderId = await addFolder(name, category);
+    
+    // Now this is assigning a number to a number state
+    setFolderId(newFolderId); 
+    
+    setIsModalVisible(false);
+  } catch (e) {
+    Alert.alert("Error", "Failed to create folder");
+  }
+};
+  const monthGrid = useMemo(() => buildMonthGrid(viewMonth.getFullYear(), viewMonth.getMonth()), [viewMonth]);
 
   const isSelectedDay = (day: number | null) => {
     if (day == null) return false;
@@ -213,55 +171,40 @@ export default function TasksScreen() {
     );
   };
 
-  const filteredTasks = tasks.filter((task: Task) =>
-    (task.title ?? "").toLowerCase().includes(search.toLowerCase())
-  );
-  const activeTasks = filteredTasks.filter((t: Task) => !t.completed);
-  const completedTasks = filteredTasks.filter((t: Task) => t.completed);
-
   return (
     <KeyboardAvoidingView
       style={styles.keyboardRoot}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 44 : 0}
     >
-      <View
-        style={[
-          styles.root,
-          {
-            backgroundColor: BG,
-            paddingBottom: insets.bottom,
-            paddingLeft: insets.left,
-            paddingRight: insets.right
-          }
-        ]}
-      >
-        <View
-          style={[
-            styles.header,
-            { paddingTop: insets.top > 0 ? 6 : 10, paddingHorizontal: Math.max(8, scrollPad - 4) }
-          ]}
-        >
+      <View style={[styles.root, { backgroundColor: BG, paddingLeft: insets.left, paddingRight: insets.right }]}>
+        
+        {/* The Modal */}
+        <CreateFolderSheet
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onCreate={handleCreateFolder}
+        />
+
+        {/* Header */}
+        <View style={[styles.header, { marginTop: insets.top, paddingHorizontal: Math.max(8, scrollPad - 4) }]}>
           <TouchableOpacity
             style={{ width: headerSide, minWidth: 44 }}
-            onPress={() => navigation.navigate("Home")}
+            onPress={() => navigation.goBack()}
             hitSlop={12}
           >
             <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
           </TouchableOpacity>
-          <Text
-            style={[styles.headerTitle, isCompact && styles.headerTitleCompact]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
-          >
-            Set your to-do
+          
+          <Text style={[styles.headerTitle, isCompact && styles.headerTitleCompact]} numberOfLines={1}>
+            {editingId ? "Edit to-do" : "Set your to-do"}
           </Text>
+
           <View style={[styles.headerRight, { width: headerSide, minWidth: 72 }]}>
-            <TouchableOpacity onPress={openFolderPicker} hitSlop={10} style={styles.headerIconBtn}>
-              <MaterialIcons name="folder" size={20} color="#FFFFFF" />
+            <TouchableOpacity onPress={() => setIsModalVisible(true)} style={styles.headerIconBtn}>
+              <MaterialIcons name="folder" size={20} color={folderId ? ACCENT : "#FFFFFF"} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={saveTask} hitSlop={10} style={styles.headerIconBtn}>
+            <TouchableOpacity onPress={saveTask} style={styles.headerIconBtn}>
               <MaterialIcons name="check" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
@@ -269,593 +212,128 @@ export default function TasksScreen() {
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingHorizontal: scrollPad, paddingBottom: Math.max(24, insets.bottom + 8) }
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingHorizontal: scrollPad, paddingBottom: 40 }]}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled
         >
-        <View style={styles.inputStack}>
-          <TextInput
-            style={styles.inputPill}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Title"
-            placeholderTextColor="#7B88A2"
-          />
-          <TextInput
-            style={[styles.inputPill, styles.inputMultiline]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Description"
-            placeholderTextColor="#7B88A2"
-            multiline
-            textAlignVertical="top"
-          />
-        </View>
-
-        <Text style={styles.sectionLabel}>Priority status</Text>
-        <View style={styles.priorityRow}>
-          {PRIORITIES.map((item) => (
-            <TouchableOpacity
-              key={item.key}
-              style={styles.priorityOption}
-              onPress={() => setPriority(item.key)}
-              activeOpacity={0.85}
-            >
-              <View
-                style={[
-                  styles.radioCircle,
-                  priority === item.key && styles.radioCircleSelected
-                ]}
-              />
-              <Text
-                style={[styles.priorityLabel, isCompact && styles.priorityLabelCompact]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.sectionLabel}>Progress status</Text>
-        <View style={styles.segmentRow}>
-          {PROGRESS.map((item) => (
-            <TouchableOpacity
-              key={item.key}
-              style={[
-                styles.segmentButton,
-                isCompact && styles.segmentButtonCompact,
-                progress === item.key && styles.segmentButtonSelected
-              ]}
-              onPress={() => setProgress(item.key)}
-              activeOpacity={0.85}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  isCompact && styles.segmentTextCompact,
-                  progress === item.key && styles.segmentTextSelected
-                ]}
-                numberOfLines={2}
-                adjustsFontSizeToFit
-                minimumFontScale={0.75}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={styles.sectionLabel}>Select Due Date</Text>
-        <View style={[styles.dateCard, { padding: dateCardPad }]}>
-          <View style={styles.dateHeader}>
-            <Text style={[styles.dateMonth, isCompact && styles.dateMonthCompact]} numberOfLines={1}>
-              {viewMonth
-                .toLocaleString("default", { month: "long" })
-                .toUpperCase()}{" "}
-              {viewMonth.getFullYear()}
-            </Text>
-            <View style={styles.dateNav}>
-              <TouchableOpacity onPress={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))} hitSlop={8}>
-                <MaterialIcons name="chevron-left" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setViewMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))} hitSlop={8}>
-                <MaterialIcons name="chevron-right" size={22} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.inputStack}>
+            <TextInput
+              style={styles.inputPill}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Title"
+              placeholderTextColor="#7B88A2"
+            />
+            <TextInput
+              style={[styles.inputPill, styles.inputMultiline]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Description"
+              placeholderTextColor="#7B88A2"
+              multiline
+            />
           </View>
-          <View style={[styles.weekDays, { marginBottom: 8 }]}>
-            {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
-              <Text
-                key={day}
-                style={[styles.weekDayText, { width: cellSize, maxWidth: cellSize }]}
-              >
-                {day}
-              </Text>
+
+          <Text style={styles.sectionLabel}>Priority status</Text>
+          <View style={styles.priorityRow}>
+            {PRIORITIES.map((item) => (
+              <TouchableOpacity key={item.key} style={styles.priorityOption} onPress={() => setPriority(item.key)}>
+                <View style={[styles.radioCircle, priority === item.key && styles.radioCircleSelected]} />
+                <Text style={styles.priorityLabel}>{item.label}</Text>
+              </TouchableOpacity>
             ))}
           </View>
-          {monthGrid.map((row, ri) => (
-            <View key={`row-${ri}`} style={styles.dateRow}>
-              {row.map((cell, ci) =>
-                cell == null ? (
-                  <View
-                    key={`e-${ri}-${ci}`}
-                    style={[styles.dateCell, { width: cellSize, height: cellSize }]}
-                  />
-                ) : (
+
+          <Text style={styles.sectionLabel}>Progress status</Text>
+          <View style={styles.segmentRow}>
+            {PROGRESS.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                style={[styles.segmentButton, progress === item.key && styles.segmentButtonSelected]}
+                onPress={() => setProgress(item.key)}
+              >
+                <Text style={[styles.segmentText, progress === item.key && styles.segmentTextSelected]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.sectionLabel}>Select Due Date</Text>
+          <View style={[styles.dateCard, { padding: dateCardPad }]}>
+            <View style={styles.dateHeader}>
+              <Text style={styles.dateMonth}>
+                {viewMonth.toLocaleString("default", { month: "long" }).toUpperCase()} {viewMonth.getFullYear()}
+              </Text>
+              <View style={styles.dateNav}>
+                <TouchableOpacity onPress={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}>
+                  <MaterialIcons name="chevron-left" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}>
+                  <MaterialIcons name="chevron-right" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.weekDays}>
+              {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
+                <Text key={day} style={[styles.weekDayText, { width: cellSize }]}>{day}</Text>
+              ))}
+            </View>
+            {monthGrid.map((row, ri) => (
+              <View key={`row-${ri}`} style={styles.dateRow}>
+                {row.map((cell, ci) => (
                   <TouchableOpacity
-                    key={`d-${ri}-${ci}`}
-                    style={[
-                      styles.dateCell,
-                      { width: cellSize, height: cellSize },
-                      isSelectedDay(cell) && styles.dateCellSelected
-                    ]}
-                    onPress={() => selectCalendarDay(cell)}
-                    activeOpacity={0.85}
+                    key={`${ri}-${ci}`}
+                    disabled={cell === null}
+                    style={[styles.dateCell, { width: cellSize, height: cellSize }, isSelectedDay(cell) && styles.dateCellSelected]}
+                    onPress={() => cell && setDueDate(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), cell))}
                   >
-                    <Text
-                      style={[
-                        styles.dateNumber,
-                        cellSize < 32 && styles.dateNumberSmall,
-                        isSelectedDay(cell) && styles.dateNumberSelected
-                      ]}
-                    >
+                    <Text style={[styles.dateNumber, isSelectedDay(cell) && styles.dateNumberSelected]}>
                       {cell}
                     </Text>
                   </TouchableOpacity>
-                )
-              )}
-            </View>
-          ))}
-          <TouchableOpacity
-            style={styles.openPickerBtn}
-            onPress={() => setShowPicker(true)}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="event" size={18} color={ACCENT} />
-            <Text style={styles.openPickerText}>Open system calendar</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TextInput
-          style={styles.search}
-          placeholder="Search your to-dos..."
-          placeholderTextColor="#7B88A2"
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        <Text style={styles.listHeading}>Your to-dos</Text>
-        {activeTasks.map((task: Task) => (
-          <View key={task.id} style={styles.taskRow}>
-            <TouchableOpacity
-              style={styles.taskRowMain}
-              onPress={() => applyTask(task)}
-              activeOpacity={0.88}
-            >
-              <Text style={styles.taskTitle} numberOfLines={2}>
-                {task.title}
-              </Text>
-              <Text style={styles.taskMeta}>
-                {task.dueDate
-                  ? new Date(task.dueDate).toLocaleDateString()
-                  : "No date"}
-              </Text>
-            </TouchableOpacity>
-            <Switch
-              value={!!task.completed}
-              onValueChange={(v) => {
-                toggleTaskCompleted(task.id, v);
-                loadTasks();
-              }}
-              trackColor={{ false: "#334155", true: ACCENT }}
-              thumbColor="#f8fafc"
-            />
-            <TouchableOpacity
-              onPress={() => {
-                Alert.alert("Delete to-do", `Remove "${task.title}"?`, [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => {
-                      deleteTask(task.id);
-                      loadTasks();
-                      if (editingId === task.id) clearForm();
-                    }
-                  }
-                ]);
-              }}
-              hitSlop={10}
-              style={styles.deleteBtn}
-            >
-              <MaterialIcons name="delete-outline" size={22} color="#f87171" />
-            </TouchableOpacity>
+                ))}
+              </View>
+            ))}
           </View>
-        ))}
-
-        {completedTasks.length > 0 ? (
-          <Text style={[styles.listHeading, { marginTop: 8 }]}>Completed</Text>
-        ) : null}
-        {completedTasks.map((task: Task) => (
-          <View key={task.id} style={[styles.taskRow, styles.taskRowDone]}>
-            <TouchableOpacity
-              style={styles.taskRowMain}
-              onPress={() => applyTask(task)}
-              activeOpacity={0.88}
-            >
-              <Text style={[styles.taskTitle, styles.taskTitleDone]} numberOfLines={2}>
-                {task.title}
-              </Text>
-              <Text style={styles.taskMeta}>
-                {task.dueDate
-                  ? new Date(task.dueDate).toLocaleDateString()
-                  : "No date"}
-              </Text>
-            </TouchableOpacity>
-            <Switch
-              value={!!task.completed}
-              onValueChange={(v) => {
-                toggleTaskCompleted(task.id, v);
-                loadTasks();
-              }}
-              trackColor={{ false: "#334155", true: ACCENT }}
-              thumbColor="#f8fafc"
-            />
-            <TouchableOpacity
-              onPress={() => {
-                deleteTask(task.id);
-                loadTasks();
-                if (editingId === task.id) clearForm();
-              }}
-              hitSlop={10}
-              style={styles.deleteBtn}
-            >
-              <MaterialIcons name="delete-outline" size={22} color="#f87171" />
-            </TouchableOpacity>
-          </View>
-        ))}
-
-        <View style={{ height: 16 }} />
-      </ScrollView>
-
-      {showPicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
-          onChange={(_, d) => {
-            if (Platform.OS === "android") {
-              setShowPicker(false);
-            }
-            if (d) {
-              setDueDate(d);
-              setViewMonth(new Date(d.getFullYear(), d.getMonth(), 1));
-            }
-            if (Platform.OS === "ios") {
-              setShowPicker(false);
-            }
-          }}
-        />
-      )}
+        </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  keyboardRoot: {
-    flex: 1
-  },
-
-  root: {
-    flex: 1
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    minHeight: 48
-  },
-
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "700",
-    paddingHorizontal: 4
-  },
-
-  headerTitleCompact: {
-    fontSize: 15
-  },
-
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4
-  },
-
-  headerIconBtn: {
-    padding: 4,
-    marginLeft: 4
-  },
-
-  scroll: {
-    flex: 1
-  },
-
-  scrollContent: {
-    flexGrow: 1
-  },
-
-  inputStack: {
-    marginBottom: 20
-  },
-
-  inputPill: {
-    backgroundColor: "#111827",
-    color: "#FFFFFF",
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: INPUT_BORDER,
-    marginBottom: 12,
-    fontSize: 16,
-    maxWidth: "100%"
-  },
-
-  inputMultiline: {
-    minHeight: 88,
-    maxHeight: 160,
-    borderRadius: 22,
-    paddingTop: 14
-  },
-
-  sectionLabel: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    marginBottom: 12,
-    fontWeight: "600"
-  },
-
-  priorityRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 22
-  },
-
-  priorityOption: {
-    alignItems: "center",
-    flex: 1
-  },
-
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: ACCENT,
-    marginBottom: 8
-  },
-
-  radioCircleSelected: {
-    backgroundColor: ACCENT
-  },
-
-  priorityLabel: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    textAlign: "center"
-  },
-
-  priorityLabelCompact: {
-    fontSize: 10
-  },
-
-  segmentRow: {
-    flexDirection: "row",
-    backgroundColor: "#1E293B",
-    borderRadius: 18,
-    padding: 6,
-    marginBottom: 22
-  },
-
-  segmentButton: {
-    flex: 1,
-    paddingVertical: 11,
-    paddingHorizontal: 2,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 0
-  },
-
-  segmentButtonCompact: {
-    paddingVertical: 8
-  },
-
-  segmentButtonSelected: {
-    backgroundColor: "#0f172a"
-  },
-
-  segmentText: {
-    color: "#94A3B8",
-    fontSize: 12,
-    textAlign: "center"
-  },
-
-  segmentTextCompact: {
-    fontSize: 10
-  },
-
-  segmentTextSelected: {
-    color: ACCENT,
-    fontWeight: "700"
-  },
-
-  dateCard: {
-    backgroundColor: "#111827",
-    borderRadius: 22,
-    marginBottom: 22,
-    maxWidth: "100%"
-  },
-
-  dateHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14
-  },
-
-  dateMonth: {
-    color: ACCENT,
-    fontSize: 14,
-    fontWeight: "700",
-    flex: 1,
-    marginRight: 8,
-    minWidth: 0
-  },
-
-  dateMonthCompact: {
-    fontSize: 12
-  },
-
-  dateNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4
-  },
-
-  weekDays: {
-    flexDirection: "row",
-    justifyContent: "center",
-    flexWrap: "nowrap"
-  },
-
-  weekDayText: {
-    color: "#94B8FF",
-    fontSize: 10,
-    textAlign: "center"
-  },
-
-  dateRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    flexWrap: "nowrap",
-    marginBottom: 4
-  },
-
-  dateCell: {
-    justifyContent: "center",
-    alignItems: "center"
-  },
-
-  dateCellSelected: {
-    backgroundColor: ACCENT,
-    borderRadius: 10
-  },
-
-  dateNumber: {
-    color: "#E2E8F0",
-    fontSize: 14,
-    fontWeight: "600"
-  },
-
-  dateNumberSmall: {
-    fontSize: 11
-  },
-
-  dateNumberSelected: {
-    color: "#FFFFFF"
-  },
-
-  openPickerBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginTop: 12,
-    paddingVertical: 8
-  },
-
-  openPickerText: {
-    color: ACCENT,
-    fontSize: 13,
-    fontWeight: "600"
-  },
-
-  search: {
-    backgroundColor: "#111827",
-    borderRadius: 14,
-    padding: 12,
-    color: "#FFFFFF",
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#263147"
-  },
-
-  listHeading: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 10
-  },
-
-  taskRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#111827",
-    borderRadius: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#1e293b",
-    maxWidth: "100%"
-  },
-
-  taskRowDone: {
-    opacity: 0.75
-  },
-
-  taskRowMain: {
-    flex: 1,
-    marginRight: 8,
-    minWidth: 0
-  },
-
-  taskTitle: {
-    color: "#FFFFFF",
-    fontSize: 15,
-    fontWeight: "600"
-  },
-
-  taskTitleDone: {
-    textDecorationLine: "line-through",
-    color: "#94a3b8"
-  },
-
-  taskMeta: {
-    color: "#7B88A2",
-    fontSize: 12,
-    marginTop: 4
-  },
-
-  deleteBtn: {
-    marginLeft: 4,
-    padding: 4
-  }
+  keyboardRoot: { flex: 1 },
+  root: { flex: 1 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 56 },
+  headerTitle: { flex: 1, textAlign: "center", color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
+  headerTitleCompact: { fontSize: 15 },
+  headerRight: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },
+  headerIconBtn: { padding: 4, marginLeft: 4 },
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 150 },
+  inputStack: { marginBottom: 20 },
+  inputPill: { backgroundColor: "#111827", color: "#FFFFFF", paddingHorizontal: 18, paddingVertical: 14, borderRadius: 999, borderWidth: 1, borderColor: INPUT_BORDER, marginBottom: 12, fontSize: 16 },
+  inputMultiline: { minHeight: 88, maxHeight: 160, borderRadius: 22, paddingTop: 14 },
+  sectionLabel: { color: "#FFFFFF", fontSize: 14, marginBottom: 12, fontWeight: "600" },
+  priorityRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 22 },
+  priorityOption: { alignItems: "center", flex: 1 },
+  radioCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: ACCENT, marginBottom: 8 },
+  radioCircleSelected: { backgroundColor: ACCENT },
+  priorityLabel: { color: "#FFFFFF", fontSize: 12, textAlign: "center" },
+  segmentRow: { flexDirection: "row", backgroundColor: "#1E293B", borderRadius: 18, padding: 6, marginBottom: 22 },
+  segmentButton: { flex: 1, paddingVertical: 11, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  segmentButtonSelected: { backgroundColor: "#0f172a" },
+  segmentText: { color: "#94A3B8", fontSize: 12 },
+  segmentTextSelected: { color: ACCENT, fontWeight: "700" },
+  dateCard: { backgroundColor: "#111827", borderRadius: 22, marginBottom: 22 },
+  dateHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  dateMonth: { color: ACCENT, fontSize: 14, fontWeight: "700" },
+  dateNav: { flexDirection: "row", gap: 4 },
+  weekDays: { flexDirection: "row", justifyContent: "center", marginBottom: 8 },
+  weekDayText: { color: "#94B8FF", fontSize: 10, textAlign: "center" },
+  dateRow: { flexDirection: "row", justifyContent: "center", marginBottom: 4 },
+  dateCell: { justifyContent: "center", alignItems: "center" },
+  dateCellSelected: { backgroundColor: ACCENT, borderRadius: 10 },
+  dateNumber: { color: "#E2E8F0", fontSize: 14, fontWeight: "600" },
+  dateNumberSelected: { color: "#FFFFFF" }
 });
