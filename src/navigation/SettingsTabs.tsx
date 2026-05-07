@@ -2,7 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import SettingsScreen from "../screens/SettingsScreen";
-// Add "Sub" to all the paths below:
+// removed "Sub" to all the paths below:
 import MyAccountScreen from "../screens/Settings Screens/MyAccountScreen";
 import PersonalizationScreen from "../screens/Settings Screens/PersonalizationScreen";
 import NotificationsScreen from "../screens/Settings Screens/NotificationsScreen";
