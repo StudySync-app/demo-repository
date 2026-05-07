@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, useLayoutEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Text,
   View,
@@ -11,19 +11,19 @@ import {
   KeyboardAvoidingView,
   useWindowDimensions
 } from "react-native";
-import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
   addTask,
   updateTaskFull,
   type Task
 } from "../db/tasks";
-import { getFolders } from "../db/folders";
+import { addFolder } from "../db/folders"; // Ensure this exists to handle DB insertion
 import { scheduleTaskReminder } from "../lib/notification";
 import { useTaskStore } from "../store/useTaskStore";
+import { CreateFolderSheet } from "../components/CreateFolderSheet";
 
 const ACCENT = "#4B76E7";
 const BG = "#0A0E1A";
@@ -86,19 +86,9 @@ export default function TasksScreen() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
-  const [showPicker, setShowPicker] = useState(false);
-
-  const clearForm = useCallback(() => {
-    setTitle("");
-    setDescription("");
-    setPriority("important");
-    setProgress("todo");
-    setDueDate(new Date());
-    setEditingId(null);
-    setFolderId(null);
-    const d = new Date();
-    setViewMonth(new Date(d.getFullYear(), d.getMonth(), 1));
-  }, []);
+  
+  // Modal visibility state
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   const applyTask = useCallback((task: Task) => {
     setTitle(task.title ?? "");
@@ -153,19 +143,23 @@ export default function TasksScreen() {
     } catch { /* ignored */ }
 
     await loadTasks();
-    navigation.goBack(); // Return to previous screen after saving
+    navigation.goBack();
   };
 
-  const openFolderPicker = () => {
-    const folders = getFolders();
-    const buttons = [
-      { text: "No folder", onPress: () => setFolderId(null) },
-      ...folders.map((f) => ({ text: f.name, onPress: () => setFolderId(f.id) })),
-      { text: "Cancel", style: "cancel" as const }
-    ];
-    Alert.alert("Folder", "Choose a folder for this to-do", buttons);
-  };
-
+  // src/screens/TasksScreen.tsx
+const handleCreateFolder = async (name: string, category: string) => {
+  try {
+    // This captures the number returned by the updated addFolder function
+    const newFolderId = await addFolder(name, category);
+    
+    // Now this is assigning a number to a number state
+    setFolderId(newFolderId); 
+    
+    setIsModalVisible(false);
+  } catch (e) {
+    Alert.alert("Error", "Failed to create folder");
+  }
+};
   const monthGrid = useMemo(() => buildMonthGrid(viewMonth.getFullYear(), viewMonth.getMonth()), [viewMonth]);
 
   const isSelectedDay = (day: number | null) => {
@@ -183,13 +177,20 @@ export default function TasksScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 44 : 0}
     >
-      <View style={[styles.root, { backgroundColor: BG, paddingBottom: 0, paddingLeft: insets.left,paddingRight: insets.right }]}>
+      <View style={[styles.root, { backgroundColor: BG, paddingLeft: insets.left, paddingRight: insets.right }]}>
         
+        {/* The Modal */}
+        <CreateFolderSheet
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onCreate={handleCreateFolder}
+        />
+
         {/* Header */}
         <View style={[styles.header, { marginTop: insets.top, paddingHorizontal: Math.max(8, scrollPad - 4) }]}>
           <TouchableOpacity
             style={{ width: headerSide, minWidth: 44 }}
-            onPress={() => navigation.goBack()} // CHANGED: Now returns to ANY prior screen
+            onPress={() => navigation.goBack()}
             hitSlop={12}
           >
             <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
@@ -200,8 +201,8 @@ export default function TasksScreen() {
           </Text>
 
           <View style={[styles.headerRight, { width: headerSide, minWidth: 72 }]}>
-            <TouchableOpacity onPress={openFolderPicker} style={styles.headerIconBtn}>
-              <MaterialIcons name="folder" size={20} color="#FFFFFF" />
+            <TouchableOpacity onPress={() => setIsModalVisible(true)} style={styles.headerIconBtn}>
+              <MaterialIcons name="folder" size={20} color={folderId ? ACCENT : "#FFFFFF"} />
             </TouchableOpacity>
             <TouchableOpacity onPress={saveTask} style={styles.headerIconBtn}>
               <MaterialIcons name="check" size={22} color="#FFFFFF" />
@@ -214,7 +215,6 @@ export default function TasksScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingHorizontal: scrollPad, paddingBottom: 40 }]}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Inputs */}
           <View style={styles.inputStack}>
             <TextInput
               style={styles.inputPill}
@@ -233,7 +233,6 @@ export default function TasksScreen() {
             />
           </View>
 
-          {/* Priority */}
           <Text style={styles.sectionLabel}>Priority status</Text>
           <View style={styles.priorityRow}>
             {PRIORITIES.map((item) => (
@@ -244,7 +243,6 @@ export default function TasksScreen() {
             ))}
           </View>
 
-          {/* Progress */}
           <Text style={styles.sectionLabel}>Progress status</Text>
           <View style={styles.segmentRow}>
             {PROGRESS.map((item) => (
@@ -260,7 +258,6 @@ export default function TasksScreen() {
             ))}
           </View>
 
-          {/* Calendar */}
           <Text style={styles.sectionLabel}>Select Due Date</Text>
           <View style={[styles.dateCard, { padding: dateCardPad }]}>
             <View style={styles.dateHeader}>
@@ -306,19 +303,14 @@ export default function TasksScreen() {
 
 const styles = StyleSheet.create({
   keyboardRoot: { flex: 1 },
-  root: { flex: 1, position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 99, },
+  root: { flex: 1 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 56 },
   headerTitle: { flex: 1, textAlign: "center", color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
   headerTitleCompact: { fontSize: 15 },
   headerRight: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },
   headerIconBtn: { padding: 4, marginLeft: 4 },
   scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1, paddingBottom: 150, paddingHorizontal: 16,},
+  scrollContent: { flexGrow: 1, paddingBottom: 150 },
   inputStack: { marginBottom: 20 },
   inputPill: { backgroundColor: "#111827", color: "#FFFFFF", paddingHorizontal: 18, paddingVertical: 14, borderRadius: 999, borderWidth: 1, borderColor: INPUT_BORDER, marginBottom: 12, fontSize: 16 },
   inputMultiline: { minHeight: 88, maxHeight: 160, borderRadius: 22, paddingTop: 14 },

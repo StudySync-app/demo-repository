@@ -3,7 +3,8 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 export const folders = sqliteTable("folders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
-  createdAt: text("created_at"),
+  category: text("category").notNull(), // ADD THIS LINE
+  createdAt: text("created_at").default(new Date().toISOString()),
 });
 
 export const tasks = sqliteTable("tasks", {
