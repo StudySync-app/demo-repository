@@ -1,23 +1,23 @@
-// DUMMY FILE FOR UI TESTING - NO NETWORK CALLS
-export const supabase = {
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+
+console.log("🔧 Initializing Supabase...");
+console.log("🔧 URL:", supabaseUrl);
+console.log("🔧 Key length:", supabaseAnonKey?.length || 0);
+console.log("🔧 Key starts with:", supabaseAnonKey?.substring(0, 20));
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase credentials!');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    signInWithPassword: async () => ({ error: null, user: {} }),
-    signUp: async () => ({ error: null, user: {} }),
-    signOut: async () => null,
-    getUser: async () => ({ error: null, user: {} }),
-    onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
   },
-  from: (table: string) => ({
-    select: () => ({
-      eq: () => ({
-        single: async () => ({ error: null, data: null }),
-        order: () => ({ data: [], error: null })
-      }),
-      order: () => ({ data: [], error: null })
-    }),
-    insert: () => ({ error: null }),
-    delete: () => ({ error: null }),
-    update: () => ({ error: null }),
-  }),
-  rpc: () => ({ error: null, data: null })
-};
+});
+
+console.log("✅ Supabase client created successfully");

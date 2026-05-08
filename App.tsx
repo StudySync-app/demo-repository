@@ -12,6 +12,9 @@ import * as Notifications from "expo-notifications";
 // New Auth Screen Imports
 import WelcomeScreen from "./src/screens/Auth/WelcomeScreen";
 import LoginScreen from "./src/screens/Auth/LoginScreen";
+import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
+import VerifyCodeScreen from "./src/screens/Auth/VerifyCodeScreen"; // ← ADD THIS
+import ResetPasswordScreen from "./src/screens/Auth/ResetPasswordScreen"; // ← ADD THIS
 import SignUpStep1 from "./src/screens/Auth/SignUpStep1";
 import SignUpStep2 from "./src/screens/Auth/SignUpStep2";
 import SignUpStep3 from "./src/screens/Auth/SignUpStep3";
@@ -28,8 +31,6 @@ export default function App() {
     };
 
     requestPermission();
-    
-    // Session clearing code removed to stop network errors
 
   }, []);
 
@@ -48,6 +49,24 @@ export default function App() {
             component={LoginScreen} 
             options={{ headerShown: false }} 
           />
+          
+          {/* Password Reset Flow */}
+          <Stack.Screen 
+            name="ForgotPassword" 
+            component={ForgotPasswordScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="VerifyCode" 
+            component={VerifyCodeScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="ResetPassword" 
+            component={ResetPasswordScreen} 
+            options={{ headerShown: false }} 
+          />
+          
           <Stack.Screen 
             name="SignUpStep1" 
             component={SignUpStep1} 
