@@ -25,6 +25,9 @@ export type RootStackParamList = {
   SignUpStep1: undefined;
   SignUpStep2: { fullName: string; email: string };
   SignUpStep3: { fullName: string; email: string; role: string };
+  ForgotPassword: undefined;
+  VerifyCode: undefined;
+  ResetPassword: undefined;
   MainTabs: undefined;
 };
 
@@ -55,10 +58,7 @@ export default function App() {
 
     initializeApp();
     requestPermission();
-<<<<<<< HEAD
 
-=======
->>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
   }, []);
 
   return (
@@ -76,8 +76,10 @@ export default function App() {
           <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
           <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
           <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}/>
+          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen}/>
+          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen}/>
           
-<<<<<<< HEAD
           <Stack.Screen 
             name="Welcome" 
             component={WelcomeScreen} 
@@ -128,15 +130,7 @@ export default function App() {
             options={{ headerShown: false }}
           />
 
-          <Stack.Screen
-            name="NewTask"
-            component={NewTaskScreen}
-            options={{ title: "Create Task" }}
-          />
-
-=======
           <Stack.Screen name="MainTabs" component={MainTabs} />
->>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
