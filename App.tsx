@@ -11,6 +11,9 @@ import { migrateDb } from "./src/db/notes";
 // Auth Screen Imports
 import WelcomeScreen from "./src/screens/Auth/WelcomeScreen";
 import LoginScreen from "./src/screens/Auth/LoginScreen";
+import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
+import VerifyCodeScreen from "./src/screens/Auth/VerifyCodeScreen"; // ← ADD THIS
+import ResetPasswordScreen from "./src/screens/Auth/ResetPasswordScreen"; // ← ADD THIS
 import SignUpStep1 from "./src/screens/Auth/SignUpStep1";
 import SignUpStep2 from "./src/screens/Auth/SignUpStep2";
 import SignUpStep3 from "./src/screens/Auth/SignUpStep3";
@@ -52,6 +55,10 @@ export default function App() {
 
     initializeApp();
     requestPermission();
+<<<<<<< HEAD
+
+=======
+>>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
   }, []);
 
   return (
@@ -70,7 +77,66 @@ export default function App() {
           <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
           <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
           
+<<<<<<< HEAD
+          <Stack.Screen 
+            name="Welcome" 
+            component={WelcomeScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="Login" 
+            component={LoginScreen} 
+            options={{ headerShown: false }} 
+          />
+          
+          {/* Password Reset Flow */}
+          <Stack.Screen 
+            name="ForgotPassword" 
+            component={ForgotPasswordScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="VerifyCode" 
+            component={VerifyCodeScreen} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="ResetPassword" 
+            component={ResetPasswordScreen} 
+            options={{ headerShown: false }} 
+          />
+          
+          <Stack.Screen 
+            name="SignUpStep1" 
+            component={SignUpStep1} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="SignUpStep2" 
+            component={SignUpStep2} 
+            options={{ headerShown: false }} 
+          />
+          <Stack.Screen 
+            name="SignUpStep3" 
+            component={SignUpStep3} 
+            options={{ headerShown: false }} 
+          />
+
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+            options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
+            name="NewTask"
+            component={NewTaskScreen}
+            options={{ title: "Create Task" }}
+          />
+
+=======
           <Stack.Screen name="MainTabs" component={MainTabs} />
+>>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
