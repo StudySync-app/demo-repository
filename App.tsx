@@ -7,7 +7,7 @@ import MainTabs from "./src/navigation/MainTabs";
 import { initDatabase } from "./src/db/init";
 
 import * as Notifications from "expo-notifications";
-
+import { migrateDb } from "./src/db/notes";
 // Auth Screen Imports
 import WelcomeScreen from "./src/screens/Auth/WelcomeScreen";
 import LoginScreen from "./src/screens/Auth/LoginScreen";
@@ -30,8 +30,18 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
 
   useEffect(() => {
-    // Initialize database (Orderly/StudySync logic)
-    initDatabase();
+    const initializeApp = async () => {
+      try {
+        // 1. Initialize the core database
+        initDatabase();
+
+        // 2. Run your professional migration to add media columns
+        await migrateDb();
+        console.log("Database initialized and migrated successfully.");
+      } catch (error) {
+        console.error("Initialization error:", error);
+      }
+    };
 
     const requestPermission = async () => {
       const { status } = await Notifications.getPermissionsAsync();
@@ -40,6 +50,7 @@ export default function App() {
       }
     };
 
+    initializeApp();
     requestPermission();
   }, []);
 

@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Pressable } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { 
   useAudioRecorder, 
-  AudioModule, 
   useAudioRecorderState, 
+  useAudioPlayer, 
+  useAudioPlayerStatus, 
   RecordingPresets,
-  useAudioPlayer,
+  AudioModule 
 } from 'expo-audio';
+import Slider from '@react-native-community/slider';
 
 interface Props {
   onStopRecording: (uri: string | null) => void;
@@ -16,101 +18,128 @@ interface Props {
 }
 
 export default function NoteRecorderCard({ onStopRecording, isCompleted, uri }: Props) {
-  // Use the preset to satisfy all required configuration types
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  
-  // We keep this to force a re-render when the recorder updates
-  const recorderState = useAudioRecorderState(recorder);
-  
+  const recorderStatus = useAudioRecorderState(recorder);
   const player = useAudioPlayer(uri || null);
+  const playerStatus = useAudioPlayerStatus(player);
 
-  useEffect(() => {
-    if (!isCompleted) {
-      handleInitialStart();
-    }
-    return () => {
-      if (recorder.isRecording) recorder.stop();
-    };
-  }, []);
-
-  const handleInitialStart = async () => {
-    const permissions = await AudioModule.requestRecordingPermissionsAsync();
-    if (!permissions.granted) {
-      Alert.alert("Permission Denied", "Microphone access is required.");
-      return;
-    }
-    try {
-      await recorder.prepareToRecordAsync();
-      recorder.record();
-    } catch (err) {
-      console.error("Start error:", err);
-    }
-  };
-
-  const handleStop = async () => {
-    await recorder.stop();
-    onStopRecording(recorder.uri);
-  };
-
-  const handlePauseResume = () => {
-    if (recorder.isRecording) {
-      recorder.pause();
-    } else {
-      recorder.record();
-    }
-  };
+  const [customTitle, setCustomTitle] = useState("");
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const formatTime = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
-    const s = Math.floor(totalSeconds % 60);
-    const m = Math.floor((totalSeconds / 60) % 60);
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+    const m = Math.floor((totalSeconds / 60) % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
+  useEffect(() => {
+    if (isCompleted && !customTitle && (playerStatus.duration || 0) > 0) {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setCustomTitle(`${dateStr}, ${timeStr}`);
+    }
+  }, [isCompleted, playerStatus.duration]);
+
+  const startRecording = async () => {
+    try {
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
+      if (!permission.granted) return;
+      await recorder.prepareToRecordAsync();
+      setTimeout(async () => { await recorder.record(); }, 150);
+    } catch (err) { console.error(err); }
+  };
+
+  const stopRecording = async () => {
+    try {
+      await recorder.stop();
+      onStopRecording(recorder.uri); 
+    } catch (err) { console.error(err); }
+  };
+
+  // --- STATE 1: ACTIVE RECORDING UI ---
+  if (!isCompleted) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.timer}>{formatTime(recorderStatus.durationMillis || 0)}</Text>
+        <View style={styles.controls}>
+          {recorderStatus.isRecording ? (
+            <TouchableOpacity onPress={stopRecording}>
+              <Ionicons name="stop-circle" size={56} color="#ef4444" />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={startRecording}>
+              <Ionicons name="mic-circle" size={56} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  // --- STATE 2: FINISHED / COLLAPSIBLE PLAYBACK UI ---
   return (
-    <View style={[styles.card, isCompleted && styles.completedCard]}>
-      <View style={styles.infoSection}>
-        <MaterialCommunityIcons 
-          name={isCompleted ? "microphone-outline" : "microphone"} 
-          size={20} 
-          color={isCompleted ? "#3b82f6" : "#ef4444"} 
-        />
-        <Text style={styles.timer}>
-          {/* FIX: Access duration directly from the recorder and use casting to avoid TS check if needed */}
-          {isCompleted ? "Voice Note" : formatTime((recorder as any).duration || 0)}
-        </Text>
+    <Pressable 
+      style={[styles.card, isExpanded && styles.expandedCard]} 
+      onPress={() => setIsExpanded(!isExpanded)}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <TextInput
+            style={styles.editableTitle}
+            value={customTitle}
+            onChangeText={setCustomTitle}
+            placeholder="Recording Name"
+            placeholderTextColor="#71717a"
+            pointerEvents="none" // Card press handles expansion
+          />
+          <Text style={styles.subText}>
+            {isExpanded 
+              ? `${formatTime(((playerStatus as any).currentTime || 0) * 1000)} / ${formatTime(((playerStatus as any).duration || 0) * 1000)}` 
+              : formatTime(((playerStatus as any).duration || 0) * 1000)}
+          </Text>
+        </View>
+        
+        <TouchableOpacity 
+          onPress={(e) => {
+            e.stopPropagation(); // Prevents card from collapsing when hitting play
+            setIsExpanded(true);
+            playerStatus.playing ? player.pause() : player.play();
+          }}
+        >
+          <Ionicons 
+            name={playerStatus.playing ? "pause-circle" : "play-circle"} 
+            size={44} 
+            color="#fff" 
+          />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.controls}>
-        {!isCompleted ? (
-          <>
-            <TouchableOpacity onPress={handlePauseResume} style={styles.iconButton}>
-              <MaterialCommunityIcons 
-                name={recorder.isRecording ? "pause" : "play"} 
-                size={28} 
-                color="#fff" 
-              />
-            </TouchableOpacity>
-            
-            <TouchableOpacity onPress={handleStop} style={styles.iconButton}>
-              <MaterialCommunityIcons name="stop" size={28} color="#ef4444" />
-            </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity onPress={() => player.play()} style={styles.iconButton}>
-            <MaterialCommunityIcons name="play-circle" size={32} color="#3b82f6" />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
+      {isExpanded && (
+        <Slider
+          style={styles.slider}
+          minimumValue={0}
+          maximumValue={playerStatus.duration}
+          value={playerStatus.currentTime}
+          onSlidingComplete={(val) => player.seekTo(val)}
+          minimumTrackTintColor="#f59e0b"
+          maximumTrackTintColor="#3f3f46"
+          thumbTintColor="#fff"
+        />
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: '#1c1c1e', borderRadius: 14, padding: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: '#2d2d30', marginVertical: 10 },
-  completedCard: { borderColor: '#3b82f6', backgroundColor: '#0f172a' },
-  infoSection: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  timer: { color: '#fff', fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  iconButton: { padding: 4 },
+  card: { backgroundColor: '#1c1c1e', borderRadius: 16, padding: 16, marginVertical: 8, borderWidth: 1, borderColor: '#2c2c2e' },
+  expandedCard: { borderColor: '#f59e0b', backgroundColor: '#242427' },
+  timer: { color: '#fff', fontSize: 36, fontWeight: '700', textAlign: 'center', marginBottom: 10 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  titleContainer: { flex: 1, marginRight: 10 },
+  editableTitle: { color: '#fff', fontSize: 16, fontWeight: '600', padding: 0, marginBottom: 2 },
+  subText: { color: '#71717a', fontSize: 13 },
+  controls: { alignItems: 'center', justifyContent: 'center' },
+  slider: { width: '100%', height: 40, marginTop: 10 },
 });

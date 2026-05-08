@@ -31,7 +31,9 @@
       "expo-sqlite",
       "@react-native-community/datetimepicker",
       "expo-audio",
-      "expo-video"
+      "expo-video",
+      "expo-font",
+      "expo-asset"
     ],
     "extra": {
       "eas": {
