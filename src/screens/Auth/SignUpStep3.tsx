@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Animated, Easing } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/FontAwesome";
-import IconMat from "react-native-vector-icons/MaterialIcons";
+// Switch to @expo/vector-icons for consistency
+import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
 
 type RootStackParamList = { 

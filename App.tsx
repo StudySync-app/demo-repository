@@ -4,12 +4,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import MainTabs from "./src/navigation/MainTabs";
-import NewTaskScreen from "./src/screens/NewTaskScreen";
 import { initDatabase } from "./src/db/init";
 
 import * as Notifications from "expo-notifications";
 
-// New Auth Screen Imports
+// Auth Screen Imports
 import WelcomeScreen from "./src/screens/Auth/WelcomeScreen";
 import LoginScreen from "./src/screens/Auth/LoginScreen";
 import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
@@ -19,26 +18,55 @@ import SignUpStep1 from "./src/screens/Auth/SignUpStep1";
 import SignUpStep2 from "./src/screens/Auth/SignUpStep2";
 import SignUpStep3 from "./src/screens/Auth/SignUpStep3";
 
-const Stack = createNativeStackNavigator();
+// 1. Define the global param list to fix the "Property does not exist" errors
+export type RootStackParamList = {
+  Welcome: undefined;
+  Login: undefined;
+  SignUpStep1: undefined;
+  SignUpStep2: { fullName: string; email: string };
+  SignUpStep3: { fullName: string; email: string; role: string };
+  MainTabs: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
 
   useEffect(() => {
+    // Initialize database (Orderly/StudySync logic)
     initDatabase();
 
     const requestPermission = async () => {
-      await Notifications.requestPermissionsAsync();
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        await Notifications.requestPermissionsAsync();
+      }
     };
 
     requestPermission();
+<<<<<<< HEAD
 
+=======
+>>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
   }, []);
 
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Welcome">
+        <Stack.Navigator 
+          initialRouteName="Welcome"
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right' // Smooth transition for steps
+          }}
+        >
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
+          <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
+          <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
           
+<<<<<<< HEAD
           <Stack.Screen 
             name="Welcome" 
             component={WelcomeScreen} 
@@ -95,6 +123,9 @@ export default function App() {
             options={{ title: "Create Task" }}
           />
 
+=======
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+>>>>>>> 05e4a3722c72834252e0c767de0e5ee14a8a0545
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

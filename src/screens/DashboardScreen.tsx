@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import {View,Text,Image,StyleSheet,ScrollView,TouchableOpacity,useWindowDimensions,Platform} from "react-native";
+import {View,Text,Image,ImageBackground, StyleSheet,ScrollView,TouchableOpacity,useWindowDimensions,Platform} from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -144,12 +144,12 @@ export default function DashboardScreen() {
   const taggedMediaIds = useMemo(() => new Set(getTaggedContentIds("media")),[]);
 
   // --- Layout ---
-  const CARD_W = 124;
-  const CARD_H = 111;
-  const CARD_GAP = 12;
+  const CARD_W = 118;
+  const CARD_H = 112;
+  const CARD_GAP = 2;
 
   const rowInnerWidth = windowWidth - SPACING.screen * 2;
-  const needsHorizontalCardScroll = rowInnerWidth < CARD_W * 3 + CARD_GAP * 2 - 0.5;
+  const needsHorizontalCardScroll = false;
 
   const { fittedCardWidth, fittedCardHeight } = useMemo(() => {
     if (needsHorizontalCardScroll) {
@@ -210,12 +210,17 @@ export default function DashboardScreen() {
   };
 
   return (
+    <ImageBackground
+    source={require("../../assets/dashboard_bg.png")}
+    style={{ flex: 1 }}
+    resizeMode="cover"
+  >
     <ScrollView
       style={styles.container}
       contentContainerStyle={[
         styles.contentContainer,
         {
-          paddingTop: insets.top + 8,
+          paddingTop: insets.top + 16,
           paddingBottom: insets.bottom + 32
         }
       ]}
@@ -234,7 +239,14 @@ export default function DashboardScreen() {
         </View>
 
         <TouchableOpacity style={styles.searchBtn}>
-          <MaterialIcons name="search" size={22} color="#FFFFFF" />
+        <Image
+          source={require("../../assets/search.png")}
+          style={{
+            width: 24,
+            height: 24,
+            resizeMode: "contain",
+          }}
+        />
         </TouchableOpacity>
       </View>
 
@@ -293,15 +305,16 @@ export default function DashboardScreen() {
         />
       </View>
     </ScrollView>
+</ImageBackground>
   );
 }
 
 // --- Styles ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#050816" },
+  container: { flex: 1},
   contentContainer: { paddingHorizontal: SPACING.screen },
 
-  headerRow: {flexDirection: "row", justifyContent: "space-between", alignItems: "center",marginBottom: 20},
+  headerRow: {flexDirection: "row", justifyContent: "space-between", alignItems: "center",marginBottom: 40},
 
   brandRow: {flexDirection: "row",alignItems: "center"},
 
@@ -311,7 +324,7 @@ const styles = StyleSheet.create({
 
   searchBtn: { width: 42,height: 42,borderRadius: 14,backgroundColor: "#1F2A43",justifyContent: "center",alignItems: "center"},
 
-  section: { marginBottom: 22 },
+  section: { marginBottom: 14 },
 
-  sectionTitle: {color: "#fff",fontSize: 16,fontWeight: "600",marginBottom: 12}
+  sectionTitle: {color: "#fff",fontSize: 15,fontWeight: "600",marginBottom: 8}
 });

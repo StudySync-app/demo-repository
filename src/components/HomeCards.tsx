@@ -2,6 +2,7 @@ import React from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -31,7 +32,7 @@ const PRIMARY_ICON: Record<CardKind, string> = {
 };
 
 const CARD_W_BASE = 124;
-const CARD_GAP = 12;
+const CARD_GAP = 4;
 
 function badgeIconName(variant: SectionVariant): string {
   switch (variant) {
@@ -67,7 +68,7 @@ export const HomeCards: React.FC<HomeCardsProps> = ({
   // Scaling logic moved from your original renderCardRow
   const iconScale = Math.min(1, fittedCardWidth / CARD_W_BASE);
   const primaryIconSize = Math.max(16, Math.round(20 * iconScale));
-  const badgeIconSize = Math.max(14, Math.round(18 * iconScale));
+  const badgeIconSize = Math.max(20, Math.round(24 * iconScale));
   const moreIconSize = Math.max(14, Math.round(18 * iconScale));
   const titleFont = Math.max(10, Math.round(11 * iconScale));
   const subFont = Math.max(8, Math.round(9 * iconScale));
@@ -102,9 +103,28 @@ export const HomeCards: React.FC<HomeCardsProps> = ({
             height: iconWrap,
             borderRadius: Math.round(12 * iconScale)
           }]}>
-            <MaterialIcons name={PRIMARY_ICON[kind]} size={primaryIconSize} color="#FFFFFF" />
-          </View>
-          <MaterialIcons name={badgeIconName(variant)} size={badgeIconSize} color="#FFFFFF" />
+        <Image
+          source={
+            kind === "todos"
+              ? require("../../assets/todo_icon.png")
+              : kind === "media"
+              ? require("../../assets/media_icon.png")
+              : require("../../assets/notes_icon.png")
+          }
+          style={{
+            width: primaryIconSize + 8,
+            height: primaryIconSize + 8,
+            resizeMode: "contain",
+          }}
+        />
+        </View>
+        <View style={{ marginTop: -12 }}>
+          <MaterialIcons
+            name={badgeIconName(variant)}
+            size={badgeIconSize}
+            color="#FFFFFF"
+          />
+        </View>
         </View>
         
         <Text style={[styles.cardTitle, { fontSize: titleFont, lineHeight: titleFont + 2 }]} numberOfLines={2}>
@@ -151,7 +171,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", justifyContent: "flex-start", alignItems: "stretch" },
   card: { backgroundColor: "#1A2535", borderRadius: 20, padding: 8 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
-  primaryIconWrap: { backgroundColor: "#3C61A4", justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "rgba(255,140,60,0.35)" },
+  primaryIconWrap: { justifyContent: "center", alignItems: "center" },
   cardTitle: { color: "#FFFFFF", fontWeight: "700", marginBottom: 2 },
   cardSubtitle: { color: "#9CA3AF", marginBottom: 4, minHeight: 11 },
   subtitleSpacer: { minHeight: 11, marginBottom: 4 },

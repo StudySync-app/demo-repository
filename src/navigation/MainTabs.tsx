@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { Text } from "react-native";
+import { Text, Image } from "react-native";
 
 import TasksScreen from "../screens/TasksScreen";
 import NotesScreen from "../screens/NotesScreen";
@@ -37,7 +37,26 @@ export default function MainTabs() {
             else if (route.name === "Media") iconName = "image";
             else if (route.name === "Me") iconName = "settings";
 
-            return <MaterialIcons name={iconName} size={size} color={activeColor} />;
+            return (
+              <Image
+                source={
+                  route.name === "Home"
+                    ? require("../../assets/nav_home.png")
+                    : route.name === "To dos"
+                    ? require("../../assets/nav_todo.png")
+                    : route.name === "Notes"
+                    ? require("../../assets/nav_notes.png")
+                    : route.name === "Media"
+                    ? require("../../assets/nav_media.png")
+                    : require("../../assets/nav_me.png")
+                }
+                style={{
+                  width: 34,
+                  height: 34,
+                  resizeMode: "contain",
+                }}
+              />
+            );
           },
           // 2. Handle Label Color
           tabBarLabelStyle: {
@@ -59,6 +78,16 @@ export default function MainTabs() {
           },
           tabBarActiveTintColor: COLORS.primary,
           tabBarInactiveTintColor: "gray",
+          
+          tabBarStyle: {
+            backgroundColor: "#1A2535",
+            borderTopWidth: 0,
+            elevation: 0,
+            height: 90,
+            paddingTop:14,
+            paddingBottom:10,
+          },
+
         })}
       >
         <Tab.Screen name="Home" component={HomeTabs} />

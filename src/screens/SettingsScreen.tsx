@@ -1,5 +1,5 @@
 import React from "react";
-import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image} from "react-native";
+import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image, ImageBackground} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -32,12 +32,29 @@ export default function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList, "SettingsMain">>();
 
   return (
+  <ImageBackground
+    source={require("../../assets/dashboard_bg.png")}
+    style={{ flex: 1 }}
+    resizeMode="cover"
+  >
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <View style={styles.arrowBack} />
-        <Text style={styles.title}>Settings</Text>
-        <View style={styles.searchIcon} />
-      </View>
+          <View style={styles.headerRow}>
+      <TouchableOpacity
+        style={{ minWidth: 44 }}
+        onPress={() => navigation.goBack()}
+        hitSlop={12}
+      >
+        <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
+
+    <View style={styles.titleRow}>
+      <Text style={styles.title}>Settings</Text>
+
+      <TouchableOpacity hitSlop={12}>
+        <MaterialIcons name="search" size={30} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
       
         <Image
           style={styles.heroGraphic}
@@ -54,24 +71,44 @@ export default function SettingsScreen() {
             onPress={() => navigation.push(item.route)}
           >
             <View style={styles.settingIcon}>
-              <MaterialIcons name={item.icon} size={20} color="white" />
-            </View>
+              <Image
+                source={
+                  item.title === "My account"
+                    ? require("../../assets/sett_account.png")
+                    : item.title === "Personalization"
+                    ? require("../../assets/sett_personalization.png")
+                    : item.title === "Notifications"
+                    ? require("../../assets/sett_notifications.png")
+                    : item.title === "Security"
+                    ? require("../../assets/sett_security.png")
+                    : require("../../assets/sett_ai.png")
+                }
+                style={{
+                  width: 22,
+                  height: 22,
+                  resizeMode: "contain",
+                }}
+              />
+              </View>
             <Text style={styles.settingText}>{item.title}</Text>
           </TouchableOpacity>
         ))}
       </View>
     </ScrollView>
+  </ImageBackground>
+
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#050816"
+    backgroundColor: "transparent"
   },
 
   content: {
     padding: SPACING.screen,
+    paddingTop: 55,
     paddingBottom: 40
   },
 
@@ -79,8 +116,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 24
-  },
+    marginBottom: 10
+},
+
+titleRow: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: 20,
+},
 
   arrowBack: {
     width: 32,
@@ -91,8 +135,9 @@ const styles = StyleSheet.create({
 
   title: {
     color: "#FFFFFF",
-    fontSize: 28,
-    fontWeight: "700"
+    fontSize: 34,
+    fontWeight: "700",
+    marginTop: 4
   },
 
   searchIcon: {
@@ -128,32 +173,31 @@ const styles = StyleSheet.create({
 
   heroGraphic: {
   width: '100%',        // This forces it to align with the buttons below
-  height: 112,           // Reduced height so it's not "too large"
+  height: 96,           // Reduced height so it's not "too large"
   borderRadius: 20,     // Matches the rounding of your buttons
   marginBottom: 24,     // Consistent spacing
   backgroundColor: "#111827",
   },
 
   settingsList: {
-    marginTop: 8
+    marginTop: 2
   },
 
   settingItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#111827",
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    marginBottom: 14
+    backgroundColor: "#1A2535",
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    minHeight: 48
   },
 
   settingIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: "#1F2A43",
-    marginRight: 14,
+    width: 24,
+    height: 24,
+    marginRight: 12,
     justifyContent: "center",
     alignItems: "center"
   },
@@ -161,7 +205,7 @@ const styles = StyleSheet.create({
   settingText: {
     flex: 1,
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600"
   }
 });

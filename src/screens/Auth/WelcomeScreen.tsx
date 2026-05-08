@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { FontAwesome as Icon } from '@expo/vector-icons';
 
 // ADDED ForgotPassword HERE TO FIX THE ERROR
 type RootStackParamList = {

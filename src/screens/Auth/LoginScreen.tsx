@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated, Easing, Image } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
-import IconMat from "react-native-vector-icons/MaterialIcons";
+import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
 
 type RootStackParamList = { Login: undefined; MainTabs: undefined; SignUpStep1: undefined; ForgotPassword: undefined };

@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/FontAwesome";
-import IconMat from "react-native-vector-icons/MaterialIcons";
+import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 
 type RootStackParamList = { 
   SignUpStep1: undefined; 
