@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import FormattingToolbarSheet from "../components/FormattingToolbarSheet";
+import NoteRecorderCard from "../components/NoteRecorderCard";
 
 export default function NoteScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -37,7 +38,10 @@ export default function NoteScreen({ navigation }: any) {
   const [history, setHistory] = useState([{ title: "", content: "" }]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const isInternalChange = useRef(false);
+
   const [isRecording, setIsRecording] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
 
   useEffect(() => {
     const now = new Date();
@@ -125,8 +129,15 @@ export default function NoteScreen({ navigation }: any) {
 const handleFinishedRecording = (uri: string | null) => {
   setIsRecording(false);
   if (uri) {
-    console.log("Recording saved at:", uri);
-    // You can add logic here to save the URI to your note's database
+    setAudioUri(uri);
+    setHasAudio(true);
+  }
+};
+
+const handleKeyPress = ({ nativeEvent }: any) => {
+  if (nativeEvent.key === 'Backspace' && selection.start === 0 && hasAudio) {
+    setHasAudio(false);
+    setAudioUri(null);
   }
 };
 
@@ -162,6 +173,17 @@ const handleFinishedRecording = (uri: string | null) => {
           <Text style={styles.dateText}>{currentDate}</Text>
           <Text style={styles.wordCount}>{content.trim() ? content.trim().split(/\s+/).length : 0} words</Text>
         </View>
+        {/* THE ATTACHED AUDIO BLOCK */}
+        {/* Stays visible if we are currently recording OR if a recording already exists */}
+        {(isRecording || hasAudio) && (
+          <View style={styles.attachmentWrapper}>
+            <NoteRecorderCard 
+              onStopRecording={handleFinishedRecording}
+              isCompleted={hasAudio} // We'll add this prop to change UI slightly when done
+              uri={audioUri}
+            />
+          </View>
+        )}
         <TextInput
           style={[styles.noteInput, { 
             fontSize, 
@@ -207,4 +229,5 @@ const styles = StyleSheet.create({
   dateText: { fontSize: 14, color: "#3b82f6" },
   wordCount: { fontSize: 14, color: "#52525b" },
   noteInput: { color: "#d4d4d8", lineHeight: 26, flex: 1 },
+  attachmentWrapper: { width: '100%', marginBottom: 15 }, // FIXED: Added missing style
 });
