@@ -40,7 +40,7 @@ export default function App() {
       try {
         // 1. Initialize the core database
         initDatabase();
-
+  
         // 2. Run your professional migration to add media columns
         await migrateDb();
         console.log("Database initialized and migrated successfully.");
@@ -48,17 +48,17 @@ export default function App() {
         console.error("Initialization error:", error);
       }
     };
-
+  
     const requestPermission = async () => {
       const { status } = await Notifications.getPermissionsAsync();
       if (status !== 'granted') {
         await Notifications.requestPermissionsAsync();
       }
     };
-
+  
     initializeApp();
     requestPermission();
-
+  
   }, []);
 
   return (
@@ -71,14 +71,6 @@ export default function App() {
             animation: 'slide_from_right' // Smooth transition for steps
           }}
         >
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
-          <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
-          <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}/>
-          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen}/>
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen}/>
           
           <Stack.Screen 
             name="Welcome" 
