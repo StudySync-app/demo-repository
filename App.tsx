@@ -122,7 +122,7 @@ export default function App() {
             options={{ headerShown: false }}
           />
 
-          <Stack.Screen name="MainTabs" component={MainTabs} />
+        
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
