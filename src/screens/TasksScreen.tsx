@@ -20,7 +20,7 @@ import {
   updateTaskFull,
   type Task
 } from "../db/tasks";
-import { addFolder } from "../db/folders"; // Ensure this exists to handle DB insertion
+import { addFolder, getFolders, type Folder } from "../db/folders";
 import { scheduleTaskReminder } from "../lib/notification";
 import { useTaskStore } from "../store/useTaskStore";
 import { CreateFolderSheet } from "../components/CreateFolderSheet";
@@ -82,6 +82,7 @@ export default function TasksScreen() {
   const [dueDate, setDueDate] = useState(new Date());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [folderId, setFolderId] = useState<number | null>(null);
+  const [folders, setFolders] = useState<Folder[]>([]);
   const [viewMonth, setViewMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -89,6 +90,14 @@ export default function TasksScreen() {
   
   // Modal visibility state
   const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const refreshFolders = useCallback(() => {
+    setFolders(getFolders());
+  }, []);
+
+  useEffect(() => {
+    refreshFolders();
+  }, [refreshFolders]);
 
   const applyTask = useCallback((task: Task) => {
     setTitle(task.title ?? "");
@@ -154,6 +163,7 @@ const handleCreateFolder = async (name: string, category: string) => {
     
     // Now this is assigning a number to a number state
     setFolderId(newFolderId); 
+    refreshFolders();
     
     setIsModalVisible(false);
   } catch (e) {
@@ -184,6 +194,12 @@ const handleCreateFolder = async (name: string, category: string) => {
           isVisible={isModalVisible}
           onClose={() => setIsModalVisible(false)}
           onCreate={handleCreateFolder}
+          folders={folders}
+          selectedFolderId={folderId}
+          onSelectFolder={(id) => {
+            setFolderId(id);
+            setIsModalVisible(false);
+          }}
         />
 
         {/* Header */}

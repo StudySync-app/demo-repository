@@ -16,11 +16,14 @@ interface CreateFolderSheetProps {
   isVisible: boolean;
   onClose: () => void;
   onCreate: (folderName: string, category: string) => void;
+  folders?: { id: number; name: string; category?: string | null }[];
+  selectedFolderId?: number | null;
+  onSelectFolder?: (folderId: number | null) => void;
 }
 
 const CATEGORIES = ['Audios', 'Videos', 'Images', 'All'];
 
-export const CreateFolderSheet = ({ isVisible, onClose, onCreate }: CreateFolderSheetProps) => {
+export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], selectedFolderId = null, onSelectFolder }: CreateFolderSheetProps) => {
   const { height: screenHeight } = useWindowDimensions();
   const [folderName, setFolderName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -56,6 +59,29 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate }: CreateFolder
 
           <View style={styles.headerRow}>
              <Text style={styles.sheetTitle}>New Folder</Text>
+          </View>
+
+          <Text style={styles.sectionLabel}>Choose existing folder</Text>
+          <View style={styles.folderRow}>
+            <TouchableOpacity
+              style={[styles.folderChip, selectedFolderId == null && styles.folderChipActive]}
+              onPress={() => onSelectFolder?.(null)}
+            >
+              <Text style={[styles.folderChipText, selectedFolderId == null && styles.folderChipTextActive]}>
+                No folder
+              </Text>
+            </TouchableOpacity>
+            {folders.map((folder) => (
+              <TouchableOpacity
+                key={folder.id}
+                style={[styles.folderChip, selectedFolderId === folder.id && styles.folderChipActive]}
+                onPress={() => onSelectFolder?.(folder.id)}
+              >
+                <Text style={[styles.folderChipText, selectedFolderId === folder.id && styles.folderChipTextActive]}>
+                  {folder.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <View style={styles.inputContainer}>
@@ -143,6 +169,38 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '700',
+  },
+  sectionLabel: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  folderRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 18,
+  },
+  folderChip: {
+    backgroundColor: '#111827',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  folderChipActive: {
+    backgroundColor: '#102A4E',
+    borderColor: '#4B76E7',
+  },
+  folderChipText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  folderChipTextActive: {
+    color: '#FFFFFF',
   },
   inputContainer: {
     width: '100%',

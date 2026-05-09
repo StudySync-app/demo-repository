@@ -6,6 +6,7 @@ import * as Notifications from "expo-notifications";
 
 import MainTabs from "./src/navigation/MainTabs";
 import { initDatabase } from "./src/db/init";
+import { AppSettingsProvider } from "./src/settings/AppSettingsContext";
 
 import WelcomeScreen from "./src/screens/Auth/WelcomeScreen";
 import LoginScreen from "./src/screens/Auth/LoginScreen";
@@ -46,25 +47,27 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Welcome"
-          screenOptions={{
-            headerShown: false,
-            animation: "slide_from_right",
-          }}
-        >
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
-          <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
-          <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AppSettingsProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Welcome"
+            screenOptions={{
+              headerShown: false,
+              animation: "slide_from_right",
+            }}
+          >
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
+            <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
+            <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AppSettingsProvider>
     </SafeAreaProvider>
   );
 }

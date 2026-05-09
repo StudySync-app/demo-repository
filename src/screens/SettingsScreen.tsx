@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { COLORS, SPACING, RADIUS } from "../constants/theme";
+import { useAppSettings } from "../settings/AppSettingsContext";
 
 type SettingsStackParamList = {
   SettingsMain: undefined;
@@ -32,47 +33,43 @@ const settingsItems: Array<{
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList, "SettingsMain">>();
+  const { isLight, t, textScale } = useAppSettings();
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredItems = useMemo(
     () =>
       settingsItems.filter((item) =>
-        item.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+        t(item.title).toLowerCase().includes(searchQuery.trim().toLowerCase())
       ),
-    [searchQuery]
+    [searchQuery, t]
   );
 
-  return (
-  <ImageBackground
-    source={require("../../assets/dashboard_bg.png")}
-    style={{ flex: 1 }}
-    resizeMode="cover"
-  >
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+  const content = (
+    <ScrollView style={[styles.container, isLight && styles.lightContainer]} contentContainerStyle={styles.content}>
           <View style={styles.headerRow}>
       <TouchableOpacity
         style={{ minWidth: 44 }}
         onPress={() => navigation.goBack()}
         hitSlop={12}
       >
-        <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+        <MaterialIcons name="arrow-back" size={24} color={isLight ? "#0F172A" : "#FFFFFF"} />
       </TouchableOpacity>
     </View>
 
     <View style={styles.titleRow}>
-      <Text style={styles.title}>Settings</Text>
+      <Text style={[styles.title, isLight && styles.lightTitle, { fontSize: 34 * textScale }]}>{t("Settings")}</Text>
 
       <TouchableOpacity hitSlop={12} onPress={() => setIsSearching((value) => !value)}>
-        <MaterialIcons name="search" size={30} color="#FFFFFF" />
+        <MaterialIcons name="search" size={30} color={isLight ? "#0F172A" : "#FFFFFF"} />
       </TouchableOpacity>
     </View>
 
       {isSearching && (
         <TextInput
-          style={styles.searchInput}
-          placeholder="Search settings"
-          placeholderTextColor="#A3AED0"
+          style={[styles.searchInput, isLight && styles.lightInput]}
+          placeholder={t("Search settings")}
+          placeholderTextColor={isLight ? "#64748B" : "#A3AED0"}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -90,7 +87,7 @@ export default function SettingsScreen() {
         {filteredItems.map((item) => (
           <TouchableOpacity
             key={item.title}
-            style={styles.settingItem}
+            style={[styles.settingItem, isLight && styles.lightItem]}
             activeOpacity={0.8}
             onPress={() => navigation.push(item.route)}
           >
@@ -114,7 +111,7 @@ export default function SettingsScreen() {
                 }}
               />
               </View>
-            <Text style={styles.settingText}>{item.title}</Text>
+            <Text style={[styles.settingText, isLight && styles.lightTitle, { fontSize: 15 * textScale }]}>{t(item.title)}</Text>
           </TouchableOpacity>
         ))}
         {filteredItems.length === 0 && (
@@ -122,6 +119,19 @@ export default function SettingsScreen() {
         )}
       </View>
     </ScrollView>
+  );
+
+  if (isLight) {
+    return <View style={styles.lightRoot}>{content}</View>;
+  }
+
+  return (
+  <ImageBackground
+    source={require("../../assets/dashboard_bg.png")}
+    style={{ flex: 1 }}
+    resizeMode="cover"
+  >
+    {content}
   </ImageBackground>
 
   );
@@ -131,6 +141,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent"
+  },
+  lightRoot: {
+    flex: 1,
+    backgroundColor: "#F4F7FB"
+  },
+  lightContainer: {
+    backgroundColor: "#F4F7FB"
   },
 
   content: {
@@ -166,6 +183,9 @@ titleRow: {
     fontWeight: "700",
     marginTop: 4
   },
+  lightTitle: {
+    color: "#0F172A"
+  },
 
   searchIcon: {
     width: 32,
@@ -182,6 +202,12 @@ titleRow: {
     paddingHorizontal: 16,
     fontSize: 15,
     marginBottom: 16,
+  },
+  lightInput: {
+    backgroundColor: "#FFFFFF",
+    color: "#0F172A",
+    borderWidth: 1,
+    borderColor: "#DBE4F0",
   },
 
   heroCard: {
@@ -229,6 +255,11 @@ titleRow: {
     paddingHorizontal: 14,
     marginBottom: 8,
     minHeight: 48
+  },
+  lightItem: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#DBE4F0"
   },
 
   settingIcon: {

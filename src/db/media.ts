@@ -11,11 +11,12 @@ export type MediaItem = {
   createdAt?: string | null;
 };
 
-export function addMedia(name: string, uri: string, type: string) {
+export function addMedia(name: string, uri: string, type: string, folderId?: number | null) {
   db.insert(media).values({
     name,
     uri,
     type,
+    folderId: folderId ?? null,
     synced: false,
     createdAt: new Date().toISOString()
   }).run();
@@ -27,4 +28,8 @@ export function getMedia(): MediaItem[] {
 
 export function deleteMedia(id: number) {
   db.delete(media).where(eq(media.id, id)).run();
+}
+
+export function updateMediaFolder(id: number, folderId: number | null) {
+  db.update(media).set({ folderId }).where(eq(media.id, id)).run();
 }

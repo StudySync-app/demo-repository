@@ -17,10 +17,11 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { getFolders } from "../../db/folders";
 import { getMedia } from "../../db/media";
 import { getNotes } from "../../db/notes";
-import { getSetting, getSettingsSnapshot, setSetting } from "../../db/settings";
+import { getSetting, getSettingsSnapshot } from "../../db/settings";
 import { getTasks } from "../../db/tasks";
 import useNetwork from "../../hooks/useNetwork";
 import { supabase } from "../../lib/supabase";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 import {
   answerStudyQuestion,
   generateQuizQuestions,
@@ -39,38 +40,50 @@ type RowProps = {
 
 function BackHeader({ title }: { title: string }) {
   const navigation = useNavigation<any>();
+  const { isLight, t, textScale } = useAppSettings();
 
   return (
     <View style={styles.headerRow}>
       <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-        <MaterialIcons name="arrow-back" size={22} color="#FFFFFF" />
+        <MaterialIcons name="arrow-back" size={22} color={isLight ? "#0F172A" : "#FFFFFF"} />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>{title}</Text>
+      <Text style={[styles.headerTitle, { color: isLight ? "#0F172A" : "#FFFFFF", fontSize: 20 * textScale }]}>{t(title)}</Text>
     </View>
   );
 }
 
 function ScreenShell({ title, children }: { title: string; children: React.ReactNode }) {
+  const { isLight } = useAppSettings();
+  const content = (
+    <ScrollView style={[styles.container, isLight && styles.lightContainer]} contentContainerStyle={styles.content}>
+      <BackHeader title={title} />
+      {children}
+    </ScrollView>
+  );
+
+  if (isLight) {
+    return <View style={styles.lightRoot}>{content}</View>;
+  }
+
   return (
     <ImageBackground source={require("../../../assets/dashboard_bg.png")} style={{ flex: 1 }} resizeMode="cover">
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <BackHeader title={title} />
-        {children}
-      </ScrollView>
+      {content}
     </ImageBackground>
   );
 }
 
 function SettingsRow({ title, subtitle, icon = "person", onPress, right }: RowProps) {
+  const { isLight, t, textScale } = useAppSettings();
+
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={onPress ? 0.85 : 1} onPress={onPress}>
+    <TouchableOpacity style={[styles.card, isLight && styles.lightCard]} activeOpacity={onPress ? 0.85 : 1} onPress={onPress}>
       <View style={styles.row}>
-        <View style={styles.iconCircle}>
+        <View style={[styles.iconCircle, isLight && styles.lightIconCircle]}>
           <MaterialIcons name={icon as any} size={20} color="#58A6FF" />
         </View>
         <View style={styles.rowText}>
-          <Text style={styles.cardTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.cardSubtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 15 * textScale }]}>{t(title)}</Text>
+          {subtitle ? <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle, { fontSize: 11 * textScale }]}>{t(subtitle)}</Text> : null}
         </View>
         {right}
       </View>
@@ -79,6 +92,7 @@ function SettingsRow({ title, subtitle, icon = "person", onPress, right }: RowPr
 }
 
 function useStoredSetting<T>(key: string, fallback: T) {
+  const { updateSetting } = useAppSettings();
   const [value, setValueState] = useState<T>(fallback);
 
   useFocusEffect(
@@ -89,7 +103,7 @@ function useStoredSetting<T>(key: string, fallback: T) {
 
   const setValue = (next: T) => {
     setValueState(next);
-    setSetting(key, next);
+    updateSetting(key as never, next as never);
   };
 
   return [value, setValue] as const;
@@ -141,13 +155,13 @@ export function ThemeModeScreen() {
         title="Light mode"
         subtitle="Use brighter cards and backgrounds."
         icon="light-mode"
-        right={<Switch value={themeMode === "light"} onValueChange={() => setThemeMode("light")} />}
+        right={<Switch value={themeMode === "light"} onValueChange={(next) => setThemeMode(next ? "light" : "dark")} />}
       />
       <SettingsRow
         title="Dark mode"
         subtitle="Use StudySync's default dark interface."
         icon="dark-mode"
-        right={<Switch value={themeMode === "dark"} onValueChange={() => setThemeMode("dark")} />}
+        right={<Switch value={themeMode === "dark"} onValueChange={(next) => setThemeMode(next ? "dark" : "light")} />}
       />
     </ScreenShell>
   );
@@ -173,6 +187,7 @@ export function LanguageScreen() {
 }
 
 export function FontSizeScreen() {
+  const { isLight, t, textScale } = useAppSettings();
   const [fontScale, setFontScale] = useStoredSetting("fontScale", 1);
   const [useDyslexiaFont, setUseDyslexiaFont] = useStoredSetting("useDyslexiaFont", false);
 
@@ -184,9 +199,9 @@ export function FontSizeScreen() {
         icon="format-size"
         right={<Switch value={useDyslexiaFont} onValueChange={setUseDyslexiaFont} />}
       />
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Font size</Text>
-        <Text style={[styles.previewText, { fontSize: 15 * fontScale }]}>The quick brown fox jump over the lazy dog</Text>
+      <View style={[styles.card, isLight && styles.lightCard]}>
+        <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 15 * textScale }]}>{t("Font size")}</Text>
+        <Text style={[styles.previewText, isLight && styles.lightTitle, { fontSize: 15 * fontScale, letterSpacing: useDyslexiaFont ? 0.6 : 0 }]}>The quick brown fox jump over the lazy dog</Text>
         <View style={styles.segmentRow}>
           {[0.9, 1, 1.15].map((item) => (
             <TouchableOpacity
@@ -194,7 +209,7 @@ export function FontSizeScreen() {
               style={[styles.segmentButton, fontScale === item && styles.segmentActive]}
               onPress={() => setFontScale(item)}
             >
-              <Text style={styles.segmentText}>{item === 0.9 ? "Small" : item === 1 ? "Default" : "Large"}</Text>
+              <Text style={styles.segmentText}>{t(item === 0.9 ? "Small" : item === 1 ? "Default" : "Large")}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -255,6 +270,7 @@ export function DisableNotificationsScreen() {
 export function StorageSyncScreen() {
   const isOnline = useNetwork();
   const [counts, setCounts] = useState({ tasks: 0, notes: 0, media: 0, folders: 0 });
+  const [lastCleared, setLastCleared] = useStoredSetting("lastCacheClear", "Never");
 
   useFocusEffect(
     useCallback(() => {
@@ -269,7 +285,16 @@ export function StorageSyncScreen() {
 
   return (
     <ScreenShell title="Storage & sync">
-      <SettingsRow title="Clear cache" subtitle="Local database is healthy. No temporary cache to clear." icon="cleaning-services" />
+      <SettingsRow
+        title="Clear cache"
+        subtitle={`Last checked: ${lastCleared}`}
+        icon="cleaning-services"
+        onPress={() => {
+          const stamp = new Date().toLocaleString();
+          setLastCleared(stamp);
+          Alert.alert("Cache checked", "No temporary app cache was found. Your tasks, notes, media, and folders were kept.");
+        }}
+      />
       <SettingsRow title="Manage imported files" subtitle={`${counts.media} local media file(s) imported.`} icon="folder" />
       <SettingsRow title="Sync files" subtitle={isOnline ? "Online. Cloud sync is not enabled in this pass." : "Offline. Local device storage is active."} icon="sync" />
       <View style={styles.card}>
@@ -342,14 +367,22 @@ export function RecoveryEmailScreen() {
 
 export function TwoFactorScreen() {
   const [enabled, setEnabled] = useStoredSetting("mfaEnabled", false);
+  const navigation = useNavigation<any>();
+  const toggleMfa = (next: boolean) => {
+    setEnabled(next);
+    Alert.alert(
+      next ? "Two-factor preference enabled" : "Two-factor preference disabled",
+      "This saves your StudySync MFA preference locally. Full passkey login needs a production auth setup."
+    );
+  };
 
   return (
     <ScreenShell title="Two-factor authentication">
       <Text style={styles.sectionCaption}>Second steps to log in</Text>
-      <SettingsRow title="Passkeys and security keys" subtitle="Preference stored locally for demo." icon="vpn-key" right={<Switch value={enabled} onValueChange={setEnabled} />} />
-      <SettingsRow title="Phone number" subtitle={getSetting("recoveryPhone", "+63 912345678")} icon="phone" />
-      <SettingsRow title="Email" subtitle="Use your account email for recovery." icon="email" />
-      <SettingsRow title="Backup codes" subtitle="Coming with production MFA setup." icon="password" />
+      <SettingsRow title="Passkeys and security keys" subtitle="Preference stored locally for demo." icon="vpn-key" right={<Switch value={enabled} onValueChange={toggleMfa} />} />
+      <SettingsRow title="Phone number" subtitle={getSetting("recoveryPhone", "+63 912345678")} icon="phone" onPress={() => navigation.navigate("RecoveryPhone")} />
+      <SettingsRow title="Email" subtitle="Use your account email for recovery." icon="email" onPress={() => navigation.navigate("RecoveryEmail")} />
+      <SettingsRow title="Backup codes" subtitle="Tap to generate demo backup codes." icon="password" onPress={() => Alert.alert("Backup codes", "STUDY-2048\nSYNC-6174\nLOCAL-9321\n\nSave these demo codes somewhere private. Production backup codes need server-side MFA.")} />
     </ScreenShell>
   );
 }
@@ -420,16 +453,22 @@ export function SettingsSummaryCard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
+  lightRoot: { flex: 1, backgroundColor: "#F4F7FB" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   content: { padding: 20, paddingTop: 55, paddingBottom: 110 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 22 },
   headerTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "700" },
   sectionCaption: { color: "#A3AED0", fontSize: 12, marginBottom: 10 },
   card: { backgroundColor: "#1A2535", borderRadius: 14, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10 },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   iconCircle: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#10223A", alignItems: "center", justifyContent: "center" },
+  lightIconCircle: { backgroundColor: "#E8F1FF" },
   rowText: { flex: 1 },
   cardTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  lightTitle: { color: "#0F172A" },
   cardSubtitle: { color: "#A3AED0", fontSize: 11, lineHeight: 16 },
+  lightSubtitle: { color: "#475569" },
   previewText: { color: "#FFFFFF", marginVertical: 18, textAlign: "center" },
   segmentRow: { flexDirection: "row", backgroundColor: "#0F172A", borderRadius: 12, padding: 4, marginTop: 10 },
   segmentButton: { flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: "center" },
