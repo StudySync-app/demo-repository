@@ -1,23 +1,16 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { Database } from '../types/supabase';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-console.log("🔧 Initializing Supabase...");
-console.log("🔧 URL:", supabaseUrl);
-console.log("🔧 Key length:", supabaseAnonKey?.length || 0);
-console.log("🔧 Key starts with:", supabaseAnonKey?.substring(0, 20));
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase credentials!');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// This "Database" generic ensures your team gets autocomplete for tables
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
+    storage: AsyncStorage, // Keeps the team logged in after restart
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
 });
-
-console.log("✅ Supabase client created successfully");
