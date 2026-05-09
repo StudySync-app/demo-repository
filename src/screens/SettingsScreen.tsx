@@ -1,5 +1,5 @@
-import React from "react";
-import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image, ImageBackground} from "react-native";
+import React, { useMemo, useState } from "react";
+import {View,Text,StyleSheet,ScrollView,TouchableOpacity,Image, ImageBackground, TextInput} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -10,6 +10,7 @@ type SettingsStackParamList = {
   MyAccount: undefined;
   Personalization: undefined;
   Notifications: undefined;
+  StorageSync: undefined;
   Security: undefined;
   StudySync: undefined;
 };
@@ -24,12 +25,23 @@ const settingsItems: Array<{
   { title: "My account", icon: "person", route: "MyAccount" },
   { title: "Personalization", icon: "palette", route: "Personalization" },
   { title: "Notifications", icon: "notifications", route: "Notifications" },
+  { title: "Storage & sync", icon: "sync", route: "StorageSync" },
   { title: "Security", icon: "security", route: "Security" },
   { title: "StudySync AI", icon: "psychology", route: "StudySync" }
 ];
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList, "SettingsMain">>();
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredItems = useMemo(
+    () =>
+      settingsItems.filter((item) =>
+        item.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+      ),
+    [searchQuery]
+  );
 
   return (
   <ImageBackground
@@ -51,10 +63,22 @@ export default function SettingsScreen() {
     <View style={styles.titleRow}>
       <Text style={styles.title}>Settings</Text>
 
-      <TouchableOpacity hitSlop={12}>
+      <TouchableOpacity hitSlop={12} onPress={() => setIsSearching((value) => !value)}>
         <MaterialIcons name="search" size={30} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
+
+      {isSearching && (
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search settings"
+          placeholderTextColor="#A3AED0"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoFocus
+        />
+      )}
       
         <Image
           style={styles.heroGraphic}
@@ -63,7 +87,7 @@ export default function SettingsScreen() {
         />
      
       <View style={styles.settingsList}>
-        {settingsItems.map((item) => (
+        {filteredItems.map((item) => (
           <TouchableOpacity
             key={item.title}
             style={styles.settingItem}
@@ -93,6 +117,9 @@ export default function SettingsScreen() {
             <Text style={styles.settingText}>{item.title}</Text>
           </TouchableOpacity>
         ))}
+        {filteredItems.length === 0 && (
+          <Text style={styles.emptyText}>No settings found.</Text>
+        )}
       </View>
     </ScrollView>
   </ImageBackground>
@@ -145,6 +172,16 @@ titleRow: {
     height: 32,
     borderRadius: 10,
     backgroundColor: "#0F172A"
+  },
+
+  searchInput: {
+    minHeight: 48,
+    borderRadius: 16,
+    backgroundColor: "#1A2535",
+    color: "#FFFFFF",
+    paddingHorizontal: 16,
+    fontSize: 15,
+    marginBottom: 16,
   },
 
   heroCard: {
@@ -207,5 +244,12 @@ titleRow: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600"
+  },
+
+  emptyText: {
+    color: "#A3AED0",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 18
   }
 });

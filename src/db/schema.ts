@@ -53,3 +53,9 @@ export const contentTags = sqliteTable("content_tags", {
   contentId: integer("content_id"),
   tagId: integer("tag_id"),
 });
+
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: text("updated_at").default(new Date().toISOString()),
+});

@@ -8,6 +8,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS folders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'All',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
@@ -53,6 +54,12 @@ export function initDatabase() {
       content_type TEXT,
       content_id INTEGER,
       tag_id INTEGER
+    );
+
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
   `);

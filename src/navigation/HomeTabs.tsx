@@ -17,7 +17,7 @@ const Stack = createNativeStackNavigator();
 
 export default function HomeTabs() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator id="HomeStack" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="TasksScreen" component={TasksScreen} />
       <Stack.Screen name="FileTaskManager" component={FileTasksManagerScreen} />

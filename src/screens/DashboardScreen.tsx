@@ -3,9 +3,6 @@ import {View,Text,Image,ImageBackground, StyleSheet,ScrollView,TouchableOpacity,
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { Button } from 'react-native';
-import MediaImportSheet from '../components/MediaImportSheet';
 
 import { HomeCards, CardKind, SectionVariant } from "../components/HomeCards";
 import { getTasks, Task } from "../db/tasks";
@@ -14,7 +11,6 @@ import { getMedia, MediaItem } from "../db/media";
 import { getTaggedCountsByContentType, getTaggedContentIds } from "../db/tags";
 import { SPACING } from "../constants/theme";
 
-// --- Types ---
 type HomeStackParamList = {
   Dashboard: undefined;
   FileTaskManager: undefined;
@@ -30,7 +26,6 @@ type HomeStackParamList = {
 
 type HomeStackRouteName = keyof Omit<HomeStackParamList, "Dashboard">;
 
-// --- Helpers ---
 function formatRelativeTime(iso: string | null | undefined): string {
   if (!iso) return "now";
   const then = new Date(iso).getTime();
@@ -63,7 +58,6 @@ function latestCreatedAt(items: { createdAt?: string | null }[]): string | null 
   return best ?? null;
 }
 
-// --- Route Map ---
 const ROUTE_MAP: Record<SectionVariant, Record<CardKind, HomeStackRouteName>> = {
   files: {
     todos: "FileTaskManager",
@@ -82,14 +76,12 @@ const ROUTE_MAP: Record<SectionVariant, Record<CardKind, HomeStackRouteName>> = 
   }
 };
 
-// --- Main Component ---
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
 
-  // Added missing tasks state
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
@@ -99,7 +91,6 @@ export default function DashboardScreen() {
     media: 0
   });
 
-  // Async-safe refresh
   const refresh = useCallback(async () => {
     const [t, n, m, tag] = await Promise.all([
       getTasks(),
@@ -120,7 +111,6 @@ export default function DashboardScreen() {
     }, [refresh])
   );
 
-  // --- Memoized Filters ---
   const tasksInFolders = useMemo(
     () => tasks.filter((t) => t.folderId != null),
     [tasks]
@@ -136,14 +126,10 @@ export default function DashboardScreen() {
     [media]
   );
 
-  // --- Tagged IDs (FIXED dependencies) ---
   const taggedTaskIds = useMemo(() => new Set(getTaggedContentIds("task")),[]);
-
   const taggedNoteIds = useMemo(() => new Set(getTaggedContentIds("note")),[]);
-
   const taggedMediaIds = useMemo(() => new Set(getTaggedContentIds("media")),[]);
 
-  // --- Layout ---
   const CARD_W = 118;
   const CARD_H = 112;
   const CARD_GAP = 2;
@@ -165,13 +151,11 @@ export default function DashboardScreen() {
     };
   }, [needsHorizontalCardScroll, rowInnerWidth]);
 
-  // --- Navigation ---
   const handlePress = (kind: CardKind, variant: SectionVariant) => {
     const routeName = ROUTE_MAP[variant][kind];
     navigation.navigate(routeName);
   };
 
-  // --- Subtitles ---
   const subtitleMyFiles = (kind: CardKind) => {
     const list =
       kind === "todos" ? tasks :
@@ -227,7 +211,6 @@ export default function DashboardScreen() {
       showsVerticalScrollIndicator={false}
       nestedScrollEnabled={Platform.OS === "android"}
     >
-      {/* Header */}
       <View style={styles.headerRow}>
         <View style={styles.brandRow}>
           <Image
@@ -250,7 +233,6 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sections */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>My files</Text>
         <HomeCards
@@ -309,22 +291,14 @@ export default function DashboardScreen() {
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
   container: { flex: 1},
   contentContainer: { paddingHorizontal: SPACING.screen },
-
   headerRow: {flexDirection: "row", justifyContent: "space-between", alignItems: "center",marginBottom: 40},
-
   brandRow: {flexDirection: "row",alignItems: "center"},
-
   brandLetter: {color: "#fff",fontSize: 22,fontWeight: "700"},
-
   brandLogo: {height: 44,width: 44,marginRight: 10},
-
   searchBtn: { width: 42,height: 42,borderRadius: 14,backgroundColor: "#1F2A43",justifyContent: "center",alignItems: "center"},
-
   section: { marginBottom: 14 },
-
   sectionTitle: {color: "#fff",fontSize: 15,fontWeight: "600",marginBottom: 8}
 });

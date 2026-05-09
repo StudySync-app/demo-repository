@@ -1,55 +1,78 @@
 const API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+const MODEL = "gpt-4.1-mini";
 
-export async function summarizeText(text: string) {
+type ChatMessage = {
+  role: "system" | "user";
+  content: string;
+};
 
-  console.log("API KEY:", API_KEY ? "Loaded" : "Missing");
-
-  // 🛟 fallback if no API key
+async function runStudySyncAI(messages: ChatMessage[]) {
   if (!API_KEY) {
-    return text.slice(0, 100) + "...";
+    throw new Error("Missing OpenAI API key. Add EXPO_PUBLIC_OPENAI_API_KEY to your .env file, then restart Expo with -c.");
   }
 
-  try {
-    console.log("Sending request to OpenAI...");
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      temperature: 0.4,
+      messages,
+    }),
+  });
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        messages: [
-          {
-            role: "system",
-            content: "Summarize study notes clearly and concisely.",
-          },
-          {
-            role: "user",
-            content: text,
-          },
-        ],
-      }),
-    });
+  const data = await response.json();
 
-    console.log("Response status:", response.status);
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.log("OPENAI ERROR:", data);
-
-      // 🛟 fallback if API fails
-      return text.slice(0, 100) + "...";
-    }
-
-    return data.choices?.[0]?.message?.content || text.slice(0, 100) + "...";
-
-  } catch (error) {
-    console.log("NETWORK ERROR:", error);
-
-    // 🛟 fallback if network fails
-    return text.slice(0, 100) + "...";
+  if (!response.ok) {
+    throw new Error(data?.error?.message || "OpenAI request failed.");
   }
+
+  return data.choices?.[0]?.message?.content?.trim() || "No AI response was returned.";
+}
+
+export async function summarizeStudyNotes(text: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Summarize study notes clearly with concise bullet points and key takeaways." },
+    { role: "user", content: text },
+  ]);
+}
+
+export const summarizeText = summarizeStudyNotes;
+
+export async function generateQuizQuestions(sourceText: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Create 5 study quiz questions with answers from the provided material." },
+    { role: "user", content: sourceText },
+  ]);
+}
+
+export async function answerStudyQuestion(question: string, context?: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Answer as a helpful StudySync tutor. Be accurate, brief, and student-friendly." },
+    { role: "user", content: context ? `Context:\n${context}\n\nQuestion:\n${question}` : question },
+  ]);
+}
+
+export async function suggestLearningResources(topic: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Suggest practical learning resources and study activities. Avoid fake links." },
+    { role: "user", content: topic },
+  ]);
+}
+
+export async function prioritizeTask(task: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Prioritize this task as urgent, important, or minor, and explain why in one sentence." },
+    { role: "user", content: task },
+  ]);
+}
+
+export async function suggestStudySchedule(tasks: string) {
+  return runStudySyncAI([
+    { role: "system", content: "Create a realistic short study schedule from these tasks and deadlines." },
+    { role: "user", content: tasks },
+  ]);
 }

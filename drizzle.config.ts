@@ -1,7 +1,6 @@
-import { defineConfig } from "drizzle-kit";
-export default defineConfig({
+export default {
   dialect: "sqlite",
   driver: "expo",
   schema: "./src/db/schema.ts",
   out: "./drizzle",
-});
+};
