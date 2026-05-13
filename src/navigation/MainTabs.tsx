@@ -54,6 +54,7 @@ export default function MainTabs() {
                   width: 34,
                   height: 34,
                   resizeMode: "contain",
+                  tintColor: route.name === "Me" ? undefined : activeColor,
                 }}
               />
             );
@@ -77,15 +78,15 @@ export default function MainTabs() {
             );
           },
           tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: "gray",
+          tabBarInactiveTintColor: "white",
           
           tabBarStyle: {
             backgroundColor: "#1A2535",
             borderTopWidth: 0,
             elevation: 0,
-            height: 90,
+            height: 120,
             paddingTop:14,
-            paddingBottom:10,
+            paddingBottom:12,
           },
 
         })}
