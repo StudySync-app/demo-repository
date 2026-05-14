@@ -77,17 +77,12 @@ export default function MyAccountScreen() {
 
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("PersonalDetails")}>
           <Text style={styles.cardTitle}>Personal details</Text>
-          <Text style={styles.detailLabel}>Name</Text>
-          <Text style={styles.detailValue}>{loading ? "Loading..." : fullName}</Text>
-          <Text style={styles.detailLabel}>Email</Text>
-          <Text style={styles.detailValue}>{loading ? "Loading..." : email}</Text>
-          <Text style={styles.detailLabel}>Role</Text>
-          <Text style={styles.detailValue}>{loading ? "Loading..." : role}</Text>
+          <Text style={styles.cardSubtitle}>Keep your details current and accurate.</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("Payments")}>
           <Text style={styles.cardTitle}>Payments & subscriptions</Text>
-          <Text style={styles.cardSubtitle}>Current plan: Local MVP. Tap to review demo billing details.</Text>
+          <Text style={styles.cardSubtitle}>Review your current plan, update payment methods, and view invoices.</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={handleSignOut}>
@@ -136,11 +131,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 12,
+    marginBottom: 0,
   },
   cardSubtitle: {
-    color: "#A3AED0",
-    fontSize: 14,
+    color: "#FFFFFF",
+    fontSize: 12,
     lineHeight: 22,
   },
   detailLabel: {

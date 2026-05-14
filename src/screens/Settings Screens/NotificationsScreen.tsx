@@ -24,8 +24,7 @@ export default function NotificationsScreen() {
 
         {items.map((item) => (
           <TouchableOpacity key={item.route} style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate(item.route)}>
-            <View style={styles.iconCircle}>
-              <MaterialIcons name={item.icon as any} size={20} color="#58A6FF" />
+            <View>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{item.title}</Text>
@@ -44,7 +43,6 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", marginBottom: 24, gap: 14 },
   subHeader: { color: "#FFFFFF", fontSize: 22, fontWeight: "600" },
   card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#1A2535", borderRadius: 14, padding: 14, marginBottom: 10 },
-  iconCircle: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#10223A", alignItems: "center", justifyContent: "center" },
-  cardTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 3 },
-  cardSubtitle: { color: "#A3AED0", fontSize: 11, lineHeight: 16 },
+  cardTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "700", marginBottom: 3 },
+  cardSubtitle: { color: "#FFFFFF", fontSize: 12, lineHeight: 16 },
 });
