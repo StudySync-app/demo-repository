@@ -198,10 +198,10 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
         icon="account-circle"
         onPress={handlePickImage}/>      
       <SettingsRow title="Name" subtitle={name} icon="badge" />
-      <SettingsRow title="Email" subtitle={email || "No email loaded"} icon="email" />
       <SettingsRow title="Birthday" subtitle="Not set" icon="cake" />
       <SettingsRow title="Gender" subtitle="Not set" icon="person" />
       <Text style={styles.sectionCaption}>Contact info</Text>
+      <SettingsRow title="Email" subtitle={email || "No email loaded"} icon="email" />
       <SettingsRow title="Phone" subtitle={getSetting("recoveryPhone", "+63 912345678")} icon="phone" />
     </ScreenShell>
   );
@@ -210,6 +210,7 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
 export function PaymentsScreen() {
   return (
     <ScreenShell title="Payments & subscriptions">
+      <Text style={styles.sectionCaption}>Payment method</Text>
       <SettingsRow title="Manage payment methods" subtitle="No payment method is connected." icon="credit-card" />
       <SettingsRow title="Payment info" subtitle="StudySync is running in demo mode." icon="receipt" />
       <SettingsRow title="Subscriptions" subtitle="Current plan: Local MVP." icon="workspace-premium" />
@@ -529,7 +530,8 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 55, paddingBottom: 110 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 22 },
   headerTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "700" },
-  sectionCaption: { color: "#A3AED0", fontSize: 12, marginBottom: 10 },
+  sectionCaption: { color: "#FFFFFF", fontSize: 19, marginBottom: 10 },
+
   card: { backgroundColor: "#1A2535", borderRadius: 14, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10 },
   lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
@@ -538,7 +540,7 @@ const styles = StyleSheet.create({
   rowText: { flex: 1 },
   cardTitle: { color: "#FFFFFF", fontSize: 15, fontWeight: "700", marginBottom: 3 },
   lightTitle: { color: "#0F172A" },
-  cardSubtitle: { color: "#A3AED0", fontSize: 11, lineHeight: 16 },
+  cardSubtitle: { color: "#FFFFFF", fontSize: 11, lineHeight: 16 },
   lightSubtitle: { color: "#475569" },
   previewText: { color: "#FFFFFF", marginVertical: 18, textAlign: "center" },
   segmentRow: { flexDirection: "row", backgroundColor: "#0F172A", borderRadius: 12, padding: 4, marginTop: 10 },
