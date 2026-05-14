@@ -30,6 +30,11 @@ import {
   suggestStudySchedule,
 } from "../../lib/ai";
 
+import * as ImagePicker from "expo-image-picker";
+
+import { DeviceEventEmitter } from "react-native";
+
+
 type RowProps = {
   title: string;
   subtitle?: string;
@@ -55,11 +60,14 @@ function BackHeader({ title }: { title: string }) {
 function ScreenShell({ title, children }: { title: string; children: React.ReactNode }) {
   const { isLight } = useAppSettings();
   const content = (
-    <ScrollView style={[styles.container, isLight && styles.lightContainer]} contentContainerStyle={styles.content}>
-      <BackHeader title={title} />
-      {children}
-    </ScrollView>
-  );
+      <ScrollView
+        style={[styles.container, isLight && styles.lightContainer]}
+        contentContainerStyle={styles.content}
+      >
+        <BackHeader title={title} />
+        {children}
+      </ScrollView>
+    );
 
   if (isLight) {
     return <View style={styles.lightRoot}>{content}</View>;
@@ -121,11 +129,74 @@ export function PersonalDetailsScreen() {
       });
     }, [])
   );
+    
+  const handlePickImage = async () => {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) {
+    Alert.alert("Permission needed", "Allow access to your photos.");
+    return;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 0.7,
+  });
+
+  if (result.canceled) return;
+
+  const image = result.assets[0];
+  const uri = image.uri;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+const fileName = `${user.id}-${Date.now()}.jpg`;
+
+  const response = await fetch(uri);
+  const arrayBuffer = await response.arrayBuffer();
+
+  const { error: uploadError } = await supabase.storage
+  .from("avatars")
+  .upload(fileName, arrayBuffer, {
+    contentType: "image/jpeg",
+    upsert: true,
+  });
+
+  if (uploadError) {
+    Alert.alert("Upload failed", uploadError.message);
+    return;
+  }
+
+  const { data } = supabase.storage
+    .from("avatars")
+    .getPublicUrl(fileName);
+
+  const publicUrl = data.publicUrl;
+
+  const { error: updateError } = await supabase.auth.updateUser({
+    data: { avatar_url: publicUrl },
+  });
+
+  if (updateError) {
+    Alert.alert("Save failed", updateError.message);
+    return;
+  }
+
+  await supabase.auth.refreshSession();
+
+  DeviceEventEmitter.emit("avatarUpdated", publicUrl);
+
+  Alert.alert("Success", "Profile picture updated!");
+};
 
   return (
     <ScreenShell title="Personal details">
       <Text style={styles.sectionCaption}>Basic info</Text>
-      <SettingsRow title="Profile picture" subtitle="Managed by your StudySync account." icon="account-circle" />
+      <SettingsRow
+        title="Profile picture"
+        subtitle="Tap to upload your profile image."
+        icon="account-circle"
+        onPress={handlePickImage}/>      
       <SettingsRow title="Name" subtitle={name} icon="badge" />
       <SettingsRow title="Email" subtitle={email || "No email loaded"} icon="email" />
       <SettingsRow title="Birthday" subtitle="Not set" icon="cake" />

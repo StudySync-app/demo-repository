@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import React, { useState } from "react";import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { Text, Image } from "react-native";
 
@@ -10,13 +9,48 @@ import MediaImportSheet from "../components/MediaImportSheet";
 import HomeTabs from "./HomeTabs";
 import { COLORS } from "../constants/theme";
 
+import { useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { supabase } from "../lib/supabase";
+
+import { DeviceEventEmitter } from "react-native";
+
 const Tab = createBottomTabNavigator();
 
 // Placeholder so the tab exists but renders nothing
 const Placeholder = () => null;
 
+
+
 export default function MainTabs() {
   const [isSheetVisible, setSheetVisible] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  
+  useEffect(() => {
+  const loadUser = async () => {
+    const { data } = await supabase.auth.getUser();
+const url = data.user?.user_metadata?.avatar_url;
+setProfileImage(url ? url + "?t=" + Date.now() : null);  };
+  loadUser();
+}, []);
+
+useFocusEffect(
+  React.useCallback(() => {
+    const loadUser = async () => {
+      const { data } = await supabase.auth.getUser();
+const url = data.user?.user_metadata?.avatar_url;
+setProfileImage(url ? url + "?t=" + Date.now() : null);    };
+    loadUser();
+  }, [])
+);
+
+useEffect(() => {
+  const subscription = DeviceEventEmitter.addListener("avatarUpdated", (url) => {
+    setProfileImage(url + "?t=" + Date.now());
+  });
+
+  return () => subscription.remove();
+}, []);
 
   return (
     <>
@@ -38,26 +72,31 @@ export default function MainTabs() {
             else if (route.name === "Me") iconName = "settings";
 
             return (
-              <Image
-                source={
-                  route.name === "Home"
-                    ? require("../../assets/nav_home.png")
-                    : route.name === "To dos"
-                    ? require("../../assets/nav_todo.png")
-                    : route.name === "Notes"
-                    ? require("../../assets/nav_notes.png")
-                    : route.name === "Media"
-                    ? require("../../assets/nav_media.png")
-                    : require("../../assets/nav_me.png")
-                }
-                style={{
-                  width: 34,
-                  height: 34,
-                  resizeMode: "contain",
-                  tintColor: route.name === "Me" ? undefined : activeColor,
-                }}
-              />
-            );
+  <Image
+    key={profileImage} 
+    source={
+      route.name === "Me"
+        ? profileImage
+          ? { uri: profileImage }
+          : require("../../assets/nav_home.png") // fallback
+        : route.name === "Home"
+        ? require("../../assets/nav_home.png")
+        : route.name === "To dos"
+        ? require("../../assets/nav_todo.png")
+        : route.name === "Notes"
+        ? require("../../assets/nav_notes.png")
+        : require("../../assets/nav_media.png")
+    }
+    style={{
+      width: route.name === "Me" ? 28 : 24,
+      height: route.name === "Me" ? 28 : 24,
+      borderRadius: route.name === "Me" ? 14 : 0,
+      resizeMode: route.name === "Me" ? "cover" : "contain",
+      tintColor: route.name === "Me" ? undefined : color,
+    }}
+  />
+);
+                
           },
           // 2. Handle Label Color
           tabBarLabelStyle: {
@@ -66,7 +105,7 @@ export default function MainTabs() {
           tabBarItemStyle: {
             paddingBottom: 5,
           },
-          // This function ensures the text label also turns blue
+
           tabBarLabel: ({ children, color }) => {
             const activeColor = (route.name === "Media" && isSheetVisible) 
               ? COLORS.primary 
