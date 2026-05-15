@@ -73,8 +73,12 @@ export const TaskCard = ({
 
       <View style={styles.cardFooter}>
         <Text style={styles.metaText}>Due: {dueDate}</Text>
-        <Text style={[styles.metaText, { color: priorityColor }]}>Priority: {priority}</Text>
-        <Text style={[styles.metaText, { color: progressColor }]}>Progress: {progress}</Text>
+        <Text style={[styles.metaText, { color: isCompleted ? "#D1FAE5" : priorityColor }]}>
+          {isCompleted ? "Done" : `Priority: ${priority}`}
+        </Text>
+        <Text style={[styles.metaText, { color: isCompleted ? "#D1FAE5" : progressColor }]}>
+          {isCompleted ? "Done" : `Progress: ${progress}`}
+        </Text>
       </View>
     </View>
   );

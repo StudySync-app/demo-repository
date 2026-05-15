@@ -8,6 +8,7 @@ import FileNotesManageScreen from "../screens/Manager Screens/FileNotesManageScr
 import FolderedTasksManagerScreen from "../screens/Manager Screens/FolderedTasksManagerScreen";
 import FolderedNotesManagerScreen from "../screens/Manager Screens/FolderedNotesManagerScreen";
 import FileMediaManagerScreen from "../screens/Manager Screens/FileMediaManagerScreen";
+import FileFolderManagerScreen from "../screens/Manager Screens/FileFolderManagerScreen";
 import FolderedMediaManagerScreen from "../screens/Manager Screens/FolderedMediaManagerScreen";
 import TaggedMediaManagerScreen from "../screens/Manager Screens/TaggedMediaManagerScreen";
 import TaggedTaskManagerScreen from "../screens/Manager Screens/TaggedTaskManagerScreen";
@@ -26,6 +27,7 @@ export default function HomeTabs() {
       <Stack.Screen name="FolderedTaskManager" component={FolderedTasksManagerScreen} />
       <Stack.Screen name="FolderedNotesManager" component={FolderedNotesManagerScreen} />
       <Stack.Screen name="FileMediaManager" component={FileMediaManagerScreen} />
+      <Stack.Screen name="FileFolderManager" component={FileFolderManagerScreen} />
       <Stack.Screen name="FolderedMediaManager" component={FolderedMediaManagerScreen} />
       <Stack.Screen name="TaggedMediaManager" component={TaggedMediaManagerScreen} />
       <Stack.Screen name="TaggedTaskManager" component={TaggedTaskManagerScreen} />

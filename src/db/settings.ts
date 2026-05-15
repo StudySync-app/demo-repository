@@ -22,11 +22,20 @@ export const defaultSettings = {
   mfaEnabled: false,
   recoveryPhone: "+63 912345678",
   recoveryEmail: "",
+  profileName: "",
+  profileBirthday: "",
+  profileGender: "",
+  profileAvatarUrl: "",
   homeAddress: "",
   workAddress: "",
   paymentMethod: "",
   autoBackupsEnabled: false,
   lastBackup: "Never",
+  backupTasks: true,
+  backupNotes: true,
+  backupMedia: true,
+  backupFolders: true,
+  lastCloudSync: "Never",
 };
 
 export type AppSettings = typeof defaultSettings;

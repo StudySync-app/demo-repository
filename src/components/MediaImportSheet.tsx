@@ -74,6 +74,15 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
     onClose();
   };
 
+  const inferMediaType = (file: File): "image" | "video" | "audio" | null => {
+    const mime = file.type || "";
+    const name = file.name.toLowerCase();
+    if (mime.startsWith("audio/") || /\.(mp3|m4a|wav|aac|ogg|flac)$/.test(name)) return "audio";
+    if (mime.startsWith("video/") || /\.(mp4|mov|m4v|webm|avi|mkv)$/.test(name)) return "video";
+    if (mime.startsWith("image/") || /\.(png|jpg|jpeg|gif|webp|heic)$/.test(name)) return "image";
+    return null;
+  };
+
   const pickAudio = async () => {
     try {
       const picked = await File.pickFileAsync(undefined, "audio/*");
@@ -85,11 +94,27 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
     }
   };
 
-  const pickImageOrVideo = async () => {
+  const pickAnyMediaFile = async () => {
+    try {
+      const picked = await File.pickFileAsync(undefined, "*/*");
+      const file = Array.isArray(picked) ? picked[0] : picked;
+      if (!file) return;
+      const type = inferMediaType(file);
+      if (!type) {
+        Alert.alert("Unsupported file", "Choose an audio, video, or image file.");
+        return;
+      }
+      await savePickedMedia(file.name || `Media ${Date.now()}`, file.uri, type);
+    } catch {
+      Alert.alert("Import failed", "Could not import the selected file.");
+    }
+  };
+
+  const pickImageOrVideo = async (filter = selectedType) => {
     const mediaTypes =
-      selectedType === "Videos"
+      filter === "Videos"
         ? ImagePicker.MediaTypeOptions.Videos
-        : selectedType === "Images"
+        : filter === "Images"
         ? ImagePicker.MediaTypeOptions.Images
         : ImagePicker.MediaTypeOptions.All;
 
@@ -114,15 +139,22 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
     }
 
     if (selectedType === "All") {
-      Alert.alert("Import media", "Choose the kind of media to import.", [
-        { text: "Image or video", onPress: pickImageOrVideo },
-        { text: "Audio", onPress: pickAudio },
-        { text: "Cancel", style: "cancel" },
-      ]);
+      await pickAnyMediaFile();
       return;
     }
 
-    await pickImageOrVideo();
+    await pickImageOrVideo(selectedType);
+  };
+
+  const handleFilterPress = async (filter: string) => {
+    setSelectedType(filter);
+    if (filter === "Audios") {
+      await pickAudio();
+    } else if (filter === "All") {
+      await pickAnyMediaFile();
+    } else {
+      await pickImageOrVideo(filter);
+    }
   };
 
   const createFolder = async () => {
@@ -179,7 +211,7 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
                     <TouchableOpacity
                       key={filter}
                       style={[styles.filterButton, selectedType === filter && styles.filterButtonActive]}
-                      onPress={() => setSelectedType(filter)}
+                      onPress={() => handleFilterPress(filter)}
                     >
                       <Text style={[styles.filterText, selectedType === filter && styles.filterTextActive]}>
                         {filter}

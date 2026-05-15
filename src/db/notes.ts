@@ -10,6 +10,7 @@ export type Note = {
   audioList?: string | null; 
   imageList?: string | null;
   videoList?: string | null;
+  pdfList?: string | null;
   createdAt?: string | null;
   synced?: boolean | null;
   folderId?: number | null;
@@ -21,6 +22,7 @@ export function addNote(
   audioList: any[], 
   imageList: any[], 
   videoList: any[],
+  pdfList: any[] = [],
   folderId?: number | null
 ) {
   return db.insert(notes).values({
@@ -61,6 +63,7 @@ export function updateNote(
   audioList: any[],
   imageList: any[],
   videoList: any[],
+  pdfList: any[] = [],
   folderId?: number | null
 ) {
   return db.update(notes).set({
@@ -69,6 +72,7 @@ export function updateNote(
     audioList: JSON.stringify(audioList || []),
     imageList: JSON.stringify(imageList || []),
     videoList: JSON.stringify(videoList || []),
+    pdfList: JSON.stringify(pdfList || []),
     folderId: folderId ?? null,
     synced: false,
   }).where(eq(notes.id, id)).run();
@@ -89,6 +93,7 @@ export async function migrateDb() {
     await db.run(sql`ALTER TABLE notes ADD COLUMN audio_list TEXT`);
     await db.run(sql`ALTER TABLE notes ADD COLUMN image_list TEXT`);
     await db.run(sql`ALTER TABLE notes ADD COLUMN video_list TEXT`);
+    await db.run(sql`ALTER TABLE notes ADD COLUMN pdf_list TEXT`);
     console.log("Migration successful: Columns added.");
   } catch (e) {
     console.log("Migration: Columns already exist or migration skipped.");

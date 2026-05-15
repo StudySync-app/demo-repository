@@ -24,7 +24,8 @@ import { addNote, getNoteById, updateNote } from "../db/notes";
 import { getFolders } from "../db/folders";
 import { getSetting } from "../db/settings";
 import { notifyNewNote, scheduleNoteReviewReminder } from "../lib/notification";
-import { summarizeStudyNotes } from "../lib/ai";
+import { generateQuizQuestions, summarizeStudyNotes } from "../lib/ai";
+import { useAppSettings } from "../settings/AppSettingsContext";
 
 const DRAFT_KEY = "studysync.note.draft";
 
@@ -32,6 +33,7 @@ export default function NoteScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const route = useRoute<any>();
   const noteId = route.params?.noteId as number | undefined;
+  const { isLight, textScale } = useAppSettings();
 
   // Input States
   const [title, setTitle] = useState("");
@@ -40,7 +42,11 @@ export default function NoteScreen({ navigation }: any) {
   const [audioList, setAudioList] = useState<{ id: string; uri: string }[]>([]);
   const [imageList, setImageList] = useState<any[]>([]);
   const [videoList, setVideoList] = useState<any[]>([]);
+  const [pdfList, setPdfList] = useState<any[]>([]);
   const [folderId, setFolderId] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(!noteId);
+  const [showAIMenu, setShowAIMenu] = useState(false);
+  const [hasPendingAI, setHasPendingAI] = useState(false);
 
   // Formatting States
   const [fontSize, setFontSize] = useState(17);
@@ -78,13 +84,16 @@ export default function NoteScreen({ navigation }: any) {
     const parsedAudio = safeParseList(note.audioList);
     const parsedImages = safeParseList(note.imageList);
     const parsedVideos = safeParseList(note.videoList);
+    const parsedPdfs = safeParseList(note.pdfList);
 
     setTitle(note.title ?? "");
     setContent(note.content ?? "");
     setAudioList(parsedAudio);
     setImageList(parsedImages);
     setVideoList(parsedVideos);
+    setPdfList(parsedPdfs);
     setFolderId(note.folderId ?? null);
+    setIsEditing(false);
     setHistory([{ title: note.title ?? "", content: note.content ?? "", audioList: parsedAudio }]);
     setCurrentIndex(0);
   }, [noteId]);
@@ -101,6 +110,7 @@ export default function NoteScreen({ navigation }: any) {
         setAudioList(Array.isArray(draft.audioList) ? draft.audioList : []);
         setImageList(Array.isArray(draft.imageList) ? draft.imageList : []);
         setVideoList(Array.isArray(draft.videoList) ? draft.videoList : []);
+        setPdfList(Array.isArray(draft.pdfList) ? draft.pdfList : []);
       } catch {
         AsyncStorage.removeItem(DRAFT_KEY);
       }
@@ -109,17 +119,17 @@ export default function NoteScreen({ navigation }: any) {
 
   useEffect(() => {
     if (noteId) return;
-    const hasDraft = title.trim() || content.trim() || audioList.length || imageList.length || videoList.length;
+    const hasDraft = title.trim() || content.trim() || audioList.length || imageList.length || videoList.length || pdfList.length;
     const timer = setTimeout(() => {
       if (!hasDraft) return;
       AsyncStorage.setItem(
         DRAFT_KEY,
-        JSON.stringify({ title, content, audioList, imageList, videoList, updatedAt: new Date().toISOString() })
+        JSON.stringify({ title, content, audioList, imageList, videoList, pdfList, updatedAt: new Date().toISOString() })
       );
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [audioList, content, imageList, noteId, title, videoList]);
+  }, [audioList, content, imageList, noteId, pdfList, title, videoList]);
 
   // --- History Management ---
   const updateHistory = (t: string, c: string, aL: any[]) => {
@@ -213,7 +223,7 @@ export default function NoteScreen({ navigation }: any) {
     // 1. Check if there's anything to save
     const isEmpty = !title.trim() && !content.trim() && 
                     audioList.length === 0 && imageList.length === 0 && 
-                    videoList.length === 0;
+                    videoList.length === 0 && pdfList.length === 0;
   
     if (isEmpty) {
       Alert.alert("Empty Note", "Please add some content before saving.");
@@ -223,18 +233,17 @@ export default function NoteScreen({ navigation }: any) {
     try {
       // 2. Save to Database
       if (noteId) {
-        await updateNote(noteId, title, content, audioList, imageList, videoList, folderId);
+        await updateNote(noteId, title, content, audioList, imageList, videoList, pdfList, folderId);
+        setIsEditing(false);
+        setHasPendingAI(false);
       } else {
-        await addNote(title, content, audioList, imageList, videoList, folderId);
+        await addNote(title, content, audioList, imageList, videoList, pdfList, folderId);
         await notifyNewNote(title.trim() || "Untitled note");
         await scheduleNoteReviewReminder(title.trim() || "Untitled note");
         await AsyncStorage.removeItem(DRAFT_KEY);
+        navigation.goBack();
       }
 
-      // 3. The "Clean Slate" Action
-      // goBack() kills this screen instance. 
-      // The next time you click "Add Note", the states above reset to "", "", and [].
-      navigation.goBack();
     } catch (error) {
       console.error("Save failed:", error);
       Alert.alert("Error", "Could not save your note.");
@@ -287,7 +296,7 @@ export default function NoteScreen({ navigation }: any) {
     ]);
   };
 
-  const handlePickMedia = async () => {
+  const pickImageOrVideo = async (mediaTypes: ImagePicker.MediaTypeOptions) => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert("Permission needed", "Allow access to your media library to insert files.");
@@ -295,7 +304,7 @@ export default function NoteScreen({ navigation }: any) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes,
       allowsMultipleSelection: true,
       quality: 1,
     });
@@ -326,7 +335,18 @@ export default function NoteScreen({ navigation }: any) {
     }
   };
 
+  const handlePickMedia = () => {
+    Alert.alert("Insert media", "Choose a file type to insert into this note.", [
+      { text: "Images", onPress: () => pickImageOrVideo(ImagePicker.MediaTypeOptions.Images) },
+      { text: "Videos", onPress: () => pickImageOrVideo(ImagePicker.MediaTypeOptions.Videos) },
+      { text: "Audios", onPress: handlePickAudio },
+      { text: "All", onPress: () => pickImageOrVideo(ImagePicker.MediaTypeOptions.All) },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const handleSummarize = async () => {
+    setShowAIMenu(false);
     if (!getSetting("aiSummarizeEnabled", false)) {
       Alert.alert("AI summarization is off", "Turn on AI note summarization in Settings > StudySync AI before using it.");
       return;
@@ -338,86 +358,149 @@ export default function NoteScreen({ navigation }: any) {
 
     try {
       const summary = await summarizeStudyNotes(content);
-      setContent((current) => `${current.trim()}\n\nSummary\n${summary}`.trim());
+      const nextContent = `${content.trim()}\n\nAI summarization\n${summary}`.trim();
+      setContent(nextContent);
+      updateHistory(title, nextContent, audioList);
+      setHasPendingAI(true);
     } catch (error: any) {
       Alert.alert("AI summary failed", error.message || "Could not summarize this note.");
     }
   };
 
-  const handleFolderPress = () => {
-    const folders = getFolders();
-    if (folders.length === 0) {
-      Alert.alert("No folders yet", "Create a folder from Home or while adding a to-do/media file, then assign notes here.");
+  const handleGenerateQuiz = async () => {
+    setShowAIMenu(false);
+    if (!getSetting("aiQuizEnabled", false)) {
+      Alert.alert("AI quiz generation is off", "Turn on Generate quiz questions in Settings > StudySync AI before using it.");
+      return;
+    }
+    if (!content.trim()) {
+      Alert.alert("Nothing to quiz", "Add note content first.");
       return;
     }
 
-    Alert.alert(
-      "Save note to folder",
-      "Choose a folder for this note.",
-      [
-        ...folders.slice(0, 6).map((folder) => ({
-          text: folder.name,
-          onPress: () => setFolderId(folder.id),
-        })),
-        { text: "Remove folder", onPress: () => setFolderId(null), style: "destructive" as const },
-        { text: "Open folders", onPress: () => navigation.navigate("FolderedNotesManager") },
-        { text: "Cancel", style: "cancel" as const },
-      ]
-    );
+    try {
+      const quiz = await generateQuizQuestions(content);
+      const label = `AI generated quiz - ${title.trim() || "Untitled note"}`;
+      const timestamp = new Date().toLocaleString();
+      const lines = wrapPdfLines(quiz, 78).slice(0, 46);
+      const stream = [
+        "BT",
+        "/F1 20 Tf",
+        "72 760 Td",
+        `(${escapePdfText(label)}) Tj`,
+        "0 -22 Td",
+        "/F1 10 Tf",
+        `(${escapePdfText(timestamp)}) Tj`,
+        "0 -30 Td",
+        "/F1 12 Tf",
+        ...lines.map((line) => `(${escapePdfText(line)}) Tj 0 -16 Td`),
+        "ET",
+      ].join("\n");
+      const file = new File(Paths.document, `${label.replace(/[\\/:*?"<>|]/g, "").slice(0, 60)}-${Date.now()}.pdf`);
+      file.write(makeSimplePdf(stream));
+      setPdfList((current) => [{ id: Date.now().toString(), uri: file.uri, name: label, createdAt: timestamp }, ...current]);
+      setHasPendingAI(true);
+    } catch (error: any) {
+      Alert.alert("AI quiz failed", error.message || "Could not generate quiz questions.");
+    }
   };
 
+  const handleFolderPress = () => {
+    navigation.navigate("FolderedNotesManager");
+  };
+
+  const handleAIButton = () => {
+    setHasPendingAI(true);
+    setShowAIMenu((current) => !current);
+  };
+
+  const mode = noteId ? (isEditing ? "editing" : "reading") : "creating";
+  const canEdit = mode !== "reading";
+  const showPillToolbar = canEdit;
+  const showCheck = canEdit || hasPendingAI;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <StatusBar barStyle="light-content" />
+    <View style={[styles.container, isLight && styles.lightContainer, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <StatusBar barStyle={isLight ? "dark-content" : "light-content"} />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={isLight ? "#0F172A" : "#fff"} />
         </TouchableOpacity>
         
-        <View style={styles.pillToolbar}>
-          <TouchableOpacity onPress={() => setShowFormatting(true)}>
-            <Ionicons name="text-outline" size={20} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setIsRecording(!isRecording)}>
-            <Ionicons name={isRecording ? "mic" : "mic-outline"} size={20} color={isRecording ? "#ef4444" : "#fff"} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handlePickMedia}><Ionicons name="shapes-outline" size={20} color="#fff" /></TouchableOpacity>
-          <TouchableOpacity onPress={handleFolderPress}><Ionicons name="folder-open-outline" size={20} color={folderId ? "#60A5FA" : "#fff"} /></TouchableOpacity>
-        </View>
+        {showPillToolbar ? (
+          <View style={styles.pillToolbar}>
+            <TouchableOpacity onPress={() => setShowFormatting(true)}>
+              <Ionicons name="text-outline" size={20} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setIsRecording(!isRecording)}>
+              <Ionicons name={isRecording ? "mic" : "mic-outline"} size={20} color={isRecording ? "#ef4444" : "#fff"} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handlePickMedia}><Ionicons name="shapes-outline" size={20} color="#fff" /></TouchableOpacity>
+            <TouchableOpacity onPress={handleFolderPress}><Ionicons name="folder-open-outline" size={20} color={folderId ? "#60A5FA" : "#fff"} /></TouchableOpacity>
+          </View>
+        ) : (
+          <Text style={styles.modeLabel}>Reading</Text>
+        )}
 
         <View style={styles.rightActions}>
-          <TouchableOpacity onPress={handleSummarize}>
+          <TouchableOpacity onPress={handleAIButton}>
             <Ionicons name="sparkles-outline" size={22} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleExport}>
             <Ionicons name="share-outline" size={22} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleUndo} disabled={currentIndex === 0}>
-            <Ionicons name="arrow-undo-outline" size={22} color={currentIndex === 0 ? "#3f3f46" : "#fff"} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleRedo} disabled={currentIndex === history.length - 1}>
-            <Ionicons name="arrow-redo-outline" size={22} color={currentIndex === history.length - 1 ? "#3f3f46" : "#fff"} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleSave}>
-            <Ionicons name="checkmark" size={26} color="#fff" />
-          </TouchableOpacity>
+          {mode === "reading" ? (
+            <TouchableOpacity onPress={() => setIsEditing(true)}>
+              <Ionicons name="create-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+          ) : null}
+          {canEdit ? (
+            <>
+              <TouchableOpacity onPress={handleUndo} disabled={currentIndex === 0}>
+                <Ionicons name="arrow-undo-outline" size={22} color={currentIndex === 0 ? "#3f3f46" : "#fff"} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleRedo} disabled={currentIndex === history.length - 1}>
+                <Ionicons name="arrow-redo-outline" size={22} color={currentIndex === history.length - 1 ? "#3f3f46" : "#fff"} />
+              </TouchableOpacity>
+            </>
+          ) : null}
+          {showCheck ? (
+            <TouchableOpacity onPress={handleSave}>
+              <Ionicons name="checkmark" size={26} color="#fff" />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
+      {showAIMenu ? (
+        <View style={styles.aiMenu}>
+          <TouchableOpacity style={styles.aiMenuItem} onPress={handleSummarize}>
+            <Text style={styles.aiMenuText}>Summarize</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.aiMenuItem} onPress={handleGenerateQuiz}>
+            <Text style={styles.aiMenuText}>Generate quiz questions</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <TextInput
-          style={styles.titleInput}
-          placeholder="Note Title"
-          placeholderTextColor="#52525b"
-          value={title}
-          onChangeText={(t) => { setTitle(t); updateHistory(t, content, audioList); }}
-          multiline
-        />
+        {canEdit ? (
+          <TextInput
+            style={[styles.titleInput, isLight && styles.lightText, { fontSize: 34 * textScale }]}
+            placeholder="Note Title"
+            placeholderTextColor="#52525b"
+            value={title}
+            onChangeText={(t) => { setTitle(t); updateHistory(t, content, audioList); }}
+            multiline
+          />
+        ) : (
+          <Text style={[styles.titleInput, isLight && styles.lightText, { fontSize: 34 * textScale }]}>{title || "Untitled note"}</Text>
+        )}
 
         <View style={styles.metadataRow}>
-          <Text style={styles.dateText}>{currentDate}</Text>
-          <Text style={styles.wordCount}>{content.trim() ? content.trim().split(/\s+/).length : 0} words</Text>
+          <Text style={[styles.dateText, { fontSize: 14 * textScale }]}>{currentDate}</Text>
+          <Text style={[styles.wordCount, isLight && styles.lightMuted, { fontSize: 14 * textScale }]}>{content.trim() ? content.trim().split(/\s+/).length : 0} words</Text>
         </View>
 
         <View style={styles.attachmentWrapper}>
@@ -448,31 +531,40 @@ export default function NoteScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}
 
-          <TouchableOpacity style={styles.fileAttachment} onPress={handlePickAudio}>
-            <Ionicons name="musical-note-outline" size={24} color="#fff" />
-            <Text style={styles.fileAttachmentText}>Attach audio file</Text>
-          </TouchableOpacity>
+          {pdfList.map((pdf) => (
+            <TouchableOpacity key={pdf.id || pdf.uri} style={styles.fileAttachment} onPress={() => Linking.openURL(pdf.uri)}>
+              <Ionicons name="document-text-outline" size={26} color="#fff" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fileAttachmentText} numberOfLines={1}>{pdf.name || "PDF"}</Text>
+                {pdf.createdAt ? <Text style={styles.fileAttachmentMeta}>{pdf.createdAt}</Text> : null}
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        <TextInput
-          style={[styles.noteInput, { 
-            fontSize, 
-            backgroundColor: highlightColor,
-            fontWeight: isBold ? "bold" : "normal",
-            fontStyle: isItalic ? "italic" : "normal",
-            textDecorationLine: isUnderline && isStrike ? "underline line-through" : isUnderline ? "underline" : isStrike ? "line-through" : "none",
-            padding: highlightColor !== "transparent" ? 10 : 0,
-            borderRadius: 8
-          }]}
-          value={content}
-          onChangeText={handleContentChange}
-          onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
-          multiline
-          textAlignVertical="top"
-          placeholder="Start typing..."
-          placeholderTextColor="#3f3f46"
-          onKeyPress={handleInputKeyPress}
-        />
+        {canEdit ? (
+          <TextInput
+            style={[styles.noteInput, { 
+              fontSize, 
+              backgroundColor: highlightColor,
+              fontWeight: isBold ? "bold" : "normal",
+              fontStyle: isItalic ? "italic" : "normal",
+              textDecorationLine: isUnderline && isStrike ? "underline line-through" : isUnderline ? "underline" : isStrike ? "line-through" : "none",
+              padding: highlightColor !== "transparent" ? 10 : 0,
+              borderRadius: 8
+            }]}
+            value={content}
+            onChangeText={handleContentChange}
+            onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
+            multiline
+            textAlignVertical="top"
+            placeholder="Start typing..."
+            placeholderTextColor="#3f3f46"
+            onKeyPress={handleInputKeyPress}
+          />
+        ) : (
+          <Text style={[styles.noteInput, styles.readingText, isLight && styles.lightBodyText, { fontSize: 17 * textScale }]}>{content || "No content"}</Text>
+        )}
       </ScrollView>
 
       <FormattingToolbarSheet 
@@ -549,17 +641,27 @@ function makeSimplePdf(stream: string) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
+  lightText: { color: "#0F172A" },
+  lightBodyText: { color: "#334155" },
+  lightMuted: { color: "#64748B" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, height: 64 },
   pillToolbar: { flexDirection: "row", backgroundColor: "#2d3440", borderRadius: 99, paddingHorizontal: 16, paddingVertical: 8, gap: 15 },
   rightActions: { flexDirection: "row", gap: 18, alignItems: 'center' },
+  modeLabel: { color: "#94A3B8", fontSize: 13, fontWeight: "800" },
+  aiMenu: { position: "absolute", right: 72, top: 74, zIndex: 20, backgroundColor: "#1c1c1e", borderRadius: 16, borderWidth: 1, borderColor: "#2c2c2e", overflow: "hidden", minWidth: 220 },
+  aiMenuItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#2c2c2e" },
+  aiMenuText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
   scrollContent: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
   titleInput: { fontSize: 34, fontWeight: "800", color: "#ffffff", marginBottom: 8 },
   metadataRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   dateText: { fontSize: 14, color: "#3b82f6" },
   wordCount: { fontSize: 14, color: "#52525b" },
   noteInput: { color: "#d4d4d8", lineHeight: 26, flex: 1, minHeight: 200 },
+  readingText: { fontSize: 17 },
   attachmentWrapper: { width: '100%', marginBottom: 15 },
   imageAttachment: { width: "100%", height: 180, borderRadius: 16, marginBottom: 10, backgroundColor: "#1c1c1e" },
   fileAttachment: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1c1c1e", borderRadius: 16, padding: 14, marginBottom: 10 },
   fileAttachmentText: { color: "#ffffff", flex: 1, fontWeight: "600" },
+  fileAttachmentMeta: { color: "#71717a", fontSize: 11, marginTop: 2 },
 });

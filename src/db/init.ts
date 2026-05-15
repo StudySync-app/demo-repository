@@ -32,6 +32,7 @@ export function initDatabase() {
       audio_list TEXT,
       image_list TEXT,
       video_list TEXT,
+      pdf_list TEXT,
       folder_id INTEGER,
       synced INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -70,7 +71,8 @@ export function initDatabase() {
   for (const statement of [
     "ALTER TABLE notes ADD COLUMN audio_list TEXT",
     "ALTER TABLE notes ADD COLUMN image_list TEXT",
-    "ALTER TABLE notes ADD COLUMN video_list TEXT"
+    "ALTER TABLE notes ADD COLUMN video_list TEXT",
+    "ALTER TABLE notes ADD COLUMN pdf_list TEXT"
   ]) {
     try {
       db.execSync(statement);
