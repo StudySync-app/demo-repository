@@ -66,6 +66,13 @@ export default function FileMediaManagerScreen({ navigation }: any) {
           <MaterialIcons name="arrow-back" size={28} color="#FFF" />
         </TouchableOpacity>
         <Text style={styles.title}>My Media</Text>
+   <View style={styles.headerRight}>
+        <TouchableOpacity 
+        style={styles.actionBtn} 
+        onPress={() => navigation.navigate("CreateFolderSheet")}>
+          <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
+          </TouchableOpacity> 
+        </View> 
       </View>
 
       <View style={styles.filterRow}>
@@ -146,4 +153,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1 },
   name: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   meta: { color: "#94A3B8", marginTop: 4, fontSize: 12, textTransform: "capitalize" },
+  actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
+  headerActions: { flexDirection: "row", gap: 10 },
+  headerRight: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4 },
 });

@@ -13,6 +13,7 @@ import TaggedMediaManagerScreen from "../screens/Manager Screens/TaggedMediaMana
 import TaggedTaskManagerScreen from "../screens/Manager Screens/TaggedTaskManagerScreen";
 import TaggedNotesManagerScreen from "../screens/Manager Screens/TaggedNotesManagerScreen";
 import NoteScreen from "../screens/NotesScreen";
+import { CreateFolderSheet } from "../components/CreateFolderSheet";
 
 const Stack = createNativeStackNavigator();
 

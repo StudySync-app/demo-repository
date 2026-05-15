@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"; // Added for
 import * as ImagePicker from "expo-image-picker";
 import { File } from "expo-file-system";
 import { addMedia } from "../db/media";
-import { addFolder, getFolders, type Folder } from "../db/folders";
 import { notifyNewMedia } from "../lib/notification";
 
 interface MediaImportSheetProps {
@@ -27,18 +26,13 @@ interface MediaImportSheetProps {
 
 export default function MediaImportSheet({ isVisible, onClose, onImported }: MediaImportSheetProps) {
   const [selectedType, setSelectedType] = useState("All");
-  const [folders, setFolders] = useState<Folder[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
   const insets = useSafeAreaInsets(); // Get system navigation height
   const pan = useRef(new Animated.ValueXY()).current;
 
-  const refreshFolders = () => {
-    setFolders(getFolders());
-  };
 
   useEffect(() => {
-    if (isVisible) refreshFolders();
   }, [isVisible]);
 
   const panResponder = useRef(
@@ -125,23 +119,7 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
     await pickImageOrVideo();
   };
 
-  const createFolder = async () => {
-    if (!newFolderName.trim()) {
-      Alert.alert("Folder name required", "Enter a folder name first.");
-      return;
-    }
-
-    try {
-      const id = await addFolder(newFolderName.trim(), "media");
-      setSelectedFolderId(id);
-      setNewFolderName("");
-      refreshFolders();
-    } catch {
-      Alert.alert("Folder error", "Could not create the folder.");
-    }
-  };
-
-  const filters = ["Audios", "Videos", "Images", "All"];
+  const filters = ["Audios", "Videos", "Images"];
 
   return (
     <Modal
@@ -172,7 +150,7 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
             <TouchableWithoutFeedback>
               <View>
                 <Text style={styles.heading}>Import your media files here.</Text>
-                <Text style={styles.subtitle}>Choose any of the options below.</Text>
+                <Text style={styles.subtitle}>Choose where you want to save below.</Text>
 
                 <View style={styles.filterRow}>
                   {filters.map((filter) => (
@@ -186,42 +164,6 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
-
-                <Text style={styles.sectionLabel}>Folder</Text>
-                <View style={styles.folderRow}>
-                  <TouchableOpacity
-                    style={[styles.folderChip, selectedFolderId == null && styles.folderChipActive]}
-                    onPress={() => setSelectedFolderId(null)}
-                  >
-                    <Text style={[styles.folderChipText, selectedFolderId == null && styles.folderChipTextActive]}>
-                      No folder
-                    </Text>
-                  </TouchableOpacity>
-                  {folders.map((folder) => (
-                    <TouchableOpacity
-                      key={folder.id}
-                      style={[styles.folderChip, selectedFolderId === folder.id && styles.folderChipActive]}
-                      onPress={() => setSelectedFolderId(folder.id)}
-                    >
-                      <Text style={[styles.folderChipText, selectedFolderId === folder.id && styles.folderChipTextActive]}>
-                        {folder.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                <View style={styles.createFolderRow}>
-                  <TextInput
-                    value={newFolderName}
-                    onChangeText={setNewFolderName}
-                    placeholder="New folder"
-                    placeholderTextColor="#94A3B8"
-                    style={styles.folderInput}
-                  />
-                  <TouchableOpacity style={styles.createFolderButton} onPress={createFolder}>
-                    <Text style={styles.createFolderText}>Create</Text>
-                  </TouchableOpacity>
                 </View>
 
                 <TouchableOpacity style={styles.importButton} onPress={pickMedia}>
@@ -262,7 +204,7 @@ const styles = StyleSheet.create({
   heading: { color: "#FFFFFF", fontSize: 22, fontWeight: "700", marginBottom: 8 },
   subtitle: { color: "#A3AED0", fontSize: 15, lineHeight: 22, marginBottom: 24 },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28 },
-  filterButton: { paddingVertical: 10, paddingHorizontal: 16, backgroundColor: "#1E293B", borderRadius: 14 },
+  filterButton: { paddingVertical: 10, paddingHorizontal: 31, backgroundColor: "#1E293B", borderRadius: 14 },
   filterButtonActive: { backgroundColor: "#3B82F6" },
   filterText: { color: "#94A3B8", fontSize: 14, fontWeight: "600" },
   filterTextActive: { color: "#FFFFFF" },

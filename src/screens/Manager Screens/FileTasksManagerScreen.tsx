@@ -108,6 +108,13 @@ const handleRestore = async (taskId: number) => {
             />
           </TouchableOpacity>
 
+          <TouchableOpacity 
+              style={styles.actionBtn} 
+              onPress={() => navigation.navigate("TasksScreen")}
+            >
+              <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
+            </TouchableOpacity>
+
           {/* Add Task Button (Optional: Keep or hide when in archive) */}
           {!showArchived && (
             <TouchableOpacity 
@@ -164,7 +171,7 @@ const handleRestore = async (taskId: number) => {
                         toggleContentTag("task", task.id);
                         loadTasks();
                       }}
-                      tagged={isContentTagged("task", task.id)}
+                      
                     />
                   );
                 })}

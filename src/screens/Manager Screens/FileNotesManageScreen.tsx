@@ -124,16 +124,22 @@ return (
               color="#FFF" 
             />
           </TouchableOpacity>
-
+          
+            {/* Add Folder Button */}
+            <TouchableOpacity 
+              style={styles.actionBtn} 
+              onPress={() => navigation.navigate("CreateFolderSheet")}
+            >
+              <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
+            </TouchableOpacity>  
+          
           {/* Add Note Button */}
-          {!showArchived && (
             <TouchableOpacity 
               style={styles.actionBtn} 
               onPress={() => navigation.navigate("NoteScreen")}
             >
               <MaterialIcons name="add" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
+            </TouchableOpacity>         
         </View>
       </View>
 
