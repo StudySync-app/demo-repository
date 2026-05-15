@@ -18,6 +18,15 @@ import SignUpStep2 from "./src/screens/Auth/SignUpStep2";
 import SignUpStep3 from "./src/screens/Auth/SignUpStep3";
 import NoteScreen from "./src/screens/NotesScreen";
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
@@ -26,7 +35,7 @@ export type RootStackParamList = {
   ResetPassword: { email: string };
   SignUpStep1: undefined;
   SignUpStep2: { fullName: string; email: string };
-  SignUpStep3: { fullName: string; email: string; role: string };
+  SignUpStep3: { fullName: string; email: string; role?: string };
   MainTabs: undefined;
 };
 
@@ -41,6 +50,13 @@ export default function App() {
       if (status !== "granted") {
         await Notifications.requestPermissionsAsync();
       }
+      await Notifications.setNotificationChannelAsync("studysync-reminders", {
+        name: "StudySync reminders",
+        importance: Notifications.AndroidImportance.HIGH,
+        sound: "default",
+        vibrationPattern: [0, 250, 250, 250],
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
     };
 
     requestPermission();

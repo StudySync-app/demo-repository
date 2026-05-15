@@ -105,7 +105,6 @@ function applyGlobalTextSettings(settings: AppSettings) {
   const dyslexiaStyle = settings.useDyslexiaFont
     ? {
         fontFamily: Platform.select({ android: "sans-serif", ios: "Avenir", default: undefined }),
-        letterSpacing: 0.35,
         lineHeight: 22 * fontScale,
       }
     : {};

@@ -5,14 +5,18 @@ import {
   StyleSheet, 
   TouchableOpacity, 
   ScrollView, 
-  ActivityIndicator
+  ActivityIndicator,
+  TextInput,
+  Alert
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 // Assuming these are your DB/Store helpers for notes
-import { getNotes } from "../../db/notes"; 
+import { deleteNote, getNotes, searchNotes, updateNoteFolder } from "../../db/notes"; 
+import { getFolders } from "../../db/folders";
+import { isContentTagged, toggleContentTag } from "../../db/tags";
 import NoteCard from "../../components/NoteCard"; 
 
 export default function FileNotesManagerScreen() {
@@ -22,11 +26,12 @@ const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [query, setQuery] = useState("");
 
   const loadNotes = async () => {
     setLoading(true);
     try {
-      const data = await getNotes();
+      const data = query.trim() ? await searchNotes(query) : await getNotes();
       setNotes(data || []);
     } catch (error) {
       console.error("Failed to fetch notes:", error);
@@ -38,7 +43,7 @@ const insets = useSafeAreaInsets();
   useFocusEffect(
     useCallback(() => {
       loadNotes();
-    }, [])
+    }, [query])
   );
 
   // Filter notes based on archived status
@@ -47,6 +52,52 @@ const insets = useSafeAreaInsets();
       showArchived ? note.isArchived : !note.isArchived
     );
   }, [notes, showArchived]);
+
+  const handleDelete = (note: any) => {
+    Alert.alert("Delete Note", `Remove "${note.title || "Untitled note"}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          deleteNote(note.id);
+          loadNotes();
+        },
+      },
+    ]);
+  };
+
+  const handleToggleTag = (note: any) => {
+    toggleContentTag("note", note.id);
+    loadNotes();
+  };
+
+  const handleMoveToFolder = (note: any) => {
+    const folders = getFolders();
+    if (folders.length === 0) {
+      Alert.alert("No folders yet", "Create a folder first, then move notes into it.");
+      return;
+    }
+
+    Alert.alert("Move note to folder", note.title || "Untitled note", [
+      ...folders.slice(0, 6).map((folder) => ({
+        text: folder.name,
+        onPress: () => {
+          updateNoteFolder(note.id, folder.id);
+          loadNotes();
+        },
+      })),
+      {
+        text: "Remove from folder",
+        style: "destructive",
+        onPress: () => {
+          updateNoteFolder(note.id, null);
+          loadNotes();
+        },
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
 
 return (
     <View style={styles.container}>
@@ -86,6 +137,17 @@ return (
         </View>
       </View>
 
+      <View style={styles.searchWrap}>
+        <MaterialIcons name="search" size={20} color="#94A3B8" />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search notes by keyword"
+          placeholderTextColor="#94A3B8"
+          style={styles.searchInput}
+        />
+      </View>
+
       <ScrollView
         contentContainerStyle={{
           paddingBottom: insets.bottom + 100 
@@ -115,6 +177,10 @@ return (
                   // NoteCard handles formatting of createdAt strings internally
                   date={note.createdAt || "November 25 Tue 12:00 AM"} 
                   onPress={() => navigation.navigate("NoteScreen", { noteId: note.id })}
+                  onDelete={() => handleDelete(note)}
+                  onTagPress={() => handleToggleTag(note)}
+                  onFolderPress={() => handleMoveToFolder(note)}
+                  tagged={isContentTagged("note", note.id)}
                 />
               ))}
 
@@ -146,6 +212,19 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 10 },
   actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   activeActionBtn: { backgroundColor: "#4B76E7" },
+  searchWrap: {
+    marginHorizontal: 20,
+    marginBottom: 8,
+    backgroundColor: "#111827",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#1F2A43",
+    paddingHorizontal: 14,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  searchInput: { flex: 1, color: "#FFFFFF", marginLeft: 10, fontSize: 15 },
   content: { paddingHorizontal: 20, paddingTop: 10 },
   emptyContainer: { alignItems: 'center', marginTop: 60 },
   emptyText: { color: "#94A3B8", textAlign: "center", marginTop: 12, fontSize: 16 },

@@ -21,7 +21,7 @@ import {
   type Task
 } from "../db/tasks";
 import { addFolder, getFolders, type Folder } from "../db/folders";
-import { scheduleTaskReminder } from "../lib/notification";
+import { notifyNewTask, scheduleTaskReminder } from "../lib/notification";
 import { useTaskStore } from "../store/useTaskStore";
 import { CreateFolderSheet } from "../components/CreateFolderSheet";
 
@@ -149,6 +149,7 @@ export default function TasksScreen() {
 
     try {
       await scheduleTaskReminder(title.trim(), dueDate);
+      if (editingId == null) await notifyNewTask(title.trim());
     } catch { /* ignored */ }
 
     await loadTasks();

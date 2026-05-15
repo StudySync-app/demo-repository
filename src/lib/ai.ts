@@ -30,12 +30,20 @@ async function runStudySyncAI(messages: ChatMessage[]) {
     throw new Error(data?.error?.message || "OpenAI request failed.");
   }
 
-  return data.choices?.[0]?.message?.content?.trim() || "No AI response was returned.";
+  return cleanAIOutput(data.choices?.[0]?.message?.content?.trim() || "No AI response was returned.");
+}
+
+export function cleanAIOutput(value: string) {
+  return value
+    .replace(/[#*_`>]/g, "")
+    .replace(/^\s*[-+]\s+/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export async function summarizeStudyNotes(text: string) {
   return runStudySyncAI([
-    { role: "system", content: "Summarize study notes clearly with concise bullet points and key takeaways." },
+    { role: "system", content: "Summarize study notes clearly. Use clean plain text only. Do not use markdown, asterisks, hashtags, or decorative formatting." },
     { role: "user", content: text },
   ]);
 }

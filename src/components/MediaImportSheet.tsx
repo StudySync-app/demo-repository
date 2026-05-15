@@ -14,8 +14,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context"; // Added for nav adjustment
 import * as ImagePicker from "expo-image-picker";
+import { File } from "expo-file-system";
 import { addMedia } from "../db/media";
 import { addFolder, getFolders, type Folder } from "../db/folders";
+import { notifyNewMedia } from "../lib/notification";
 
 interface MediaImportSheetProps {
   isVisible: boolean;
@@ -65,9 +67,34 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
     })
   ).current;
 
-  const pickMedia = async () => {
+  const savePickedMedia = async (name: string, uri: string, type: "image" | "video" | "audio") => {
+    addMedia(name, uri, type, selectedFolderId);
+    await notifyNewMedia(name);
+    onImported?.();
+    onClose();
+  };
+
+  const pickAudio = async () => {
+    try {
+      const picked = await File.pickFileAsync(undefined, "audio/*");
+      const file = Array.isArray(picked) ? picked[0] : picked;
+      if (!file) return;
+      await savePickedMedia(file.name || `Audio ${Date.now()}`, file.uri, "audio");
+    } catch {
+      Alert.alert("Audio import failed", "Could not import the selected audio file.");
+    }
+  };
+
+  const pickImageOrVideo = async () => {
+    const mediaTypes =
+      selectedType === "Videos"
+        ? ImagePicker.MediaTypeOptions.Videos
+        : selectedType === "Images"
+        ? ImagePicker.MediaTypeOptions.Images
+        : ImagePicker.MediaTypeOptions.All;
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes,
       allowsEditing: true,
       quality: 1,
     });
@@ -76,10 +103,26 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
       const asset = result.assets[0];
       const type = asset.type === "video" ? "video" : "image";
       const name = asset.fileName?.trim() || `Media ${Date.now()}`;
-      addMedia(name, asset.uri, type, selectedFolderId);
-      onImported?.();
-      onClose(); 
+      await savePickedMedia(name, asset.uri, type);
     }
+  };
+
+  const pickMedia = async () => {
+    if (selectedType === "Audios") {
+      await pickAudio();
+      return;
+    }
+
+    if (selectedType === "All") {
+      Alert.alert("Import media", "Choose the kind of media to import.", [
+        { text: "Image or video", onPress: pickImageOrVideo },
+        { text: "Audio", onPress: pickAudio },
+        { text: "Cancel", style: "cancel" },
+      ]);
+      return;
+    }
+
+    await pickImageOrVideo();
   };
 
   const createFolder = async () => {

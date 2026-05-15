@@ -6,9 +6,13 @@ interface NoteCardProps {
   title: string;
   date: string | Date; // Can accept a string from DB or a Date object
   onPress?: () => void;
+  onDelete?: () => void;
+  onTagPress?: () => void;
+  onFolderPress?: () => void;
+  tagged?: boolean;
 }
 
-export default function NoteCard({ title, date, onPress }: NoteCardProps) {
+export default function NoteCard({ title, date, onPress, onDelete, onTagPress, onFolderPress, tagged = false }: NoteCardProps) {
   
   // Function to format date to: "November 25 Tue 12:00 AM"
   const formatDate = (dateInput: string | Date) => {
@@ -53,7 +57,19 @@ export default function NoteCard({ title, date, onPress }: NoteCardProps) {
       </View>
 
       <View style={styles.iconContainer}>
-        <Ionicons name="bookmark" size={20} color="#ffffff" />
+        <TouchableOpacity onPress={onTagPress} hitSlop={10} style={styles.deleteButton}>
+          <Ionicons name="bookmark" size={20} color={tagged ? "#60A5FA" : "#ffffff"} />
+        </TouchableOpacity>
+        {onFolderPress ? (
+          <TouchableOpacity onPress={onFolderPress} hitSlop={10} style={styles.deleteButton}>
+            <Ionicons name="folder-open-outline" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        ) : null}
+        {onDelete ? (
+          <TouchableOpacity onPress={onDelete} hitSlop={10} style={styles.deleteButton}>
+            <Ionicons name="trash-outline" size={20} color="#F87171" />
+          </TouchableOpacity>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -87,5 +103,9 @@ const styles = StyleSheet.create({
   iconContainer: {
     paddingLeft: 10,
     paddingBottom: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
+  deleteButton: { padding: 2 },
 });

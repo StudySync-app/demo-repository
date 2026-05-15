@@ -18,9 +18,15 @@ export const defaultSettings = {
   aiSuggestEnabled: false,
   aiAssistEnabled: false,
   aiRemindEnabled: false,
+  aiSummarizeEnabled: false,
   mfaEnabled: false,
   recoveryPhone: "+63 912345678",
   recoveryEmail: "",
+  homeAddress: "",
+  workAddress: "",
+  paymentMethod: "",
+  autoBackupsEnabled: false,
+  lastBackup: "Never",
 };
 
 export type AppSettings = typeof defaultSettings;

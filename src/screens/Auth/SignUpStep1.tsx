@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
+import { supabase } from "../../lib/supabase";
 
 type RootStackParamList = { 
   SignUpStep1: undefined; 
   SignUpStep2: { fullName: string; email: string };
+  SignUpStep3: { fullName: string; email: string };
   Login: undefined;
 };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "SignUpStep1">;
@@ -26,8 +28,27 @@ export default function SignUpStep1({ navigation }: Props) {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      navigation.navigate("SignUpStep2", { fullName: name.trim(), email: email.trim() });
+      navigation.navigate("SignUpStep3", { fullName: name.trim(), email: email.trim() });
     }, 500);
+  };
+
+  const handleSocialSignUp = async (provider: "google" | "github" | "facebook") => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { skipBrowserRedirect: true },
+      });
+
+      if (oauthError) throw oauthError;
+      if (!data?.url) throw new Error("Could not start social sign up.");
+      await Linking.openURL(data.url);
+    } catch (err: any) {
+      setError(err.message || "Social sign up failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,9 +99,9 @@ export default function SignUpStep1({ navigation }: Props) {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Or sign up with</Text>
           <View style={styles.socialIcons}>
-            <TouchableOpacity style={styles.socialButton}><Icon name="google" size={24} color="#DB4437" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}><Icon name="github" size={24} color="#E5E7EB" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}><Icon name="facebook" size={24} color="#3B82F6" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("google")}><Icon name="google" size={24} color="#DB4437" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("github")}><Icon name="github" size={24} color="#E5E7EB" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("facebook")}><Icon name="facebook" size={24} color="#3B82F6" /></TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
             <Text style={styles.loginLink}>Already have an account? Sign In</Text>

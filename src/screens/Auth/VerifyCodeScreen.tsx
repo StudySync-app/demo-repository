@@ -30,9 +30,8 @@ export default function VerifyCodeScreen({ navigation, route }: any) {
   }, []);
 
   const handleVerifyCode = async () => {
-    // ✅ CHANGED: Check for 8 digits
-    if (code.length !== 8) {
-      Alert.alert("Error", "Please enter the 8-digit code");
+    if (code.length !== 6) {
+      Alert.alert("Error", "Please enter the 6-digit code");
       return;
     }
 
@@ -57,7 +56,10 @@ export default function VerifyCodeScreen({ navigation, route }: any) {
   const handleResendCode = async () => {
     setResendLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email: email.toLowerCase() });
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.toLowerCase(),
+        options: { shouldCreateUser: false },
+      });
       if (error) throw error;
       Alert.alert("Success", "New code sent!");
       setCode("");
@@ -78,7 +80,7 @@ export default function VerifyCodeScreen({ navigation, route }: any) {
 
           <Text style={styles.title}>Verify Your Email</Text>
           <Text style={styles.subtitle}>
-            Enter the 8-digit code we sent to{"\n"}
+            Enter the 6-digit code we sent to{"\n"}
             <Text style={styles.emailText}>{email}</Text>
           </Text>
 
@@ -86,21 +88,20 @@ export default function VerifyCodeScreen({ navigation, route }: any) {
             <TextInput
               ref={inputRef}
               style={styles.codeInput}
-              placeholder="00000000"
+              placeholder="000000"
               placeholderTextColor="#64748B"
               value={code}
               onChangeText={setCode}
               keyboardType="number-pad"
-              maxLength={8}
+              maxLength={6}
               textAlign="center"
             />
           </View>
 
-          {/* ✅ CHANGED: Check for 8 digits */}
           <TouchableOpacity 
-            style={[styles.btnPrimary, (code.length !== 8 || loading) && { opacity: 0.7 }]} 
+            style={[styles.btnPrimary, (code.length !== 6 || loading) && { opacity: 0.7 }]} 
             onPress={handleVerifyCode}
-            disabled={code.length !== 8 || loading}
+            disabled={code.length !== 6 || loading}
           >
             {loading ? <ActivityIndicator color="#0F172A" /> : <Text style={styles.btnPrimaryText}>Verify Code</Text>}
           </TouchableOpacity>

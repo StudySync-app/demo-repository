@@ -12,7 +12,7 @@ import FolderedMediaManagerScreen from "../screens/Manager Screens/FolderedMedia
 import TaggedMediaManagerScreen from "../screens/Manager Screens/TaggedMediaManagerScreen";
 import TaggedTaskManagerScreen from "../screens/Manager Screens/TaggedTaskManagerScreen";
 import TaggedNotesManagerScreen from "../screens/Manager Screens/TaggedNotesManagerScreen";
-import NotesScreen from "../screens/NotesScreen";
+import NoteScreen from "../screens/NotesScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -30,7 +30,7 @@ export default function HomeTabs() {
       <Stack.Screen name="TaggedMediaManager" component={TaggedMediaManagerScreen} />
       <Stack.Screen name="TaggedTaskManager" component={TaggedTaskManagerScreen} />
       <Stack.Screen name="TaggedNotesManager" component={TaggedNotesManagerScreen} />
-      <Stack.Screen  name="NoteScreen" component={NotesScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="NoteScreen" component={NoteScreen} />
     </Stack.Navigator>
   );
 }

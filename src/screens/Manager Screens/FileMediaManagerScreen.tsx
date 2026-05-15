@@ -1,17 +1,127 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { Alert, Image, Linking, ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { deleteMedia, getMedia, type MediaItem } from "../../db/media";
+import { isContentTagged, toggleContentTag } from "../../db/tags";
 
-export default function FileMediaManagerScreen() {
-  // Move this INSIDE the component
+export default function FileMediaManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "audio">("all");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+
+  const load = useCallback(() => {
+    setItems(getMedia());
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  const displayed = useMemo(() => {
+    return items
+      .filter((item) => typeFilter === "all" || item.type === typeFilter)
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return sort === "newest" ? bTime - aTime : aTime - bTime;
+      });
+  }, [items, sort, typeFilter]);
+
+  const openMedia = async (item: MediaItem) => {
+    if (!item.uri) return;
+    const canOpen = await Linking.canOpenURL(item.uri);
+    if (canOpen) {
+      await Linking.openURL(item.uri);
+    } else {
+      Alert.alert("Preview unavailable", "This file cannot be opened from its saved location.");
+    }
+  };
+
+  const removeMedia = (item: MediaItem) => {
+    Alert.alert("Delete media", `Remove "${item.name || "media file"}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => {
+          deleteMedia(item.id);
+          load();
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={[
       styles.container, 
       { paddingTop: insets.top, paddingBottom: insets.bottom }
     ]}>
-      <Text style={styles.text}>File media</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+        </TouchableOpacity>
+        <Text style={styles.title}>My Media</Text>
+      </View>
+
+      <View style={styles.filterRow}>
+        {(["all", "image", "video", "audio"] as const).map((filter) => (
+          <TouchableOpacity
+            key={filter}
+            style={[styles.chip, typeFilter === filter && styles.chipActive]}
+            onPress={() => setTypeFilter(filter)}
+          >
+            <Text style={[styles.chipText, typeFilter === filter && styles.chipTextActive]}>
+              {filter === "all" ? "All" : filter[0].toUpperCase() + filter.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity style={styles.chip} onPress={() => setSort(sort === "newest" ? "oldest" : "newest")}>
+          <Text style={styles.chipText}>{sort === "newest" ? "Newest" : "Oldest"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.list}>
+        {displayed.length === 0 ? (
+          <View style={styles.empty}>
+            <MaterialIcons name="perm-media" size={48} color="#1F2A43" />
+            <Text style={styles.emptyText}>No media files found.</Text>
+          </View>
+        ) : (
+          displayed.map((item) => (
+            <TouchableOpacity key={item.id} style={styles.card} onPress={() => openMedia(item)}>
+              {item.type === "image" && item.uri ? (
+                <Image source={{ uri: item.uri }} style={styles.thumbnail} />
+              ) : (
+                <View style={styles.thumbnail}>
+                  <MaterialIcons
+                    name={item.type === "video" ? "play-circle-outline" : "audiotrack"}
+                    size={34}
+                    color="#FFFFFF"
+                  />
+                </View>
+              )}
+              <View style={styles.cardBody}>
+                <Text style={styles.name} numberOfLines={1}>{item.name || "Untitled media"}</Text>
+                <Text style={styles.meta}>{item.type || "file"} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "No date"}</Text>
+              </View>
+              <TouchableOpacity onPress={() => removeMedia(item)} hitSlop={10}>
+                <MaterialIcons name="delete-outline" size={24} color="#F87171" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                toggleContentTag("media", item.id);
+                load();
+              }} hitSlop={10}>
+                <MaterialIcons name="bookmark" size={24} color={isContentTagged("media", item.id) ? "#60A5FA" : "#FFFFFF"} />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -20,11 +130,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#050816",
-    justifyContent: 'center',
-    alignItems: 'center'
   },
-  text: {
-    color: '#FFFFFF',
-    fontSize: 18
-  }
+  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 16, gap: 14 },
+  title: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
+  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 20, marginBottom: 10 },
+  chip: { backgroundColor: "#1F2A43", borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  chipActive: { backgroundColor: "#4B76E7" },
+  chipText: { color: "#94A3B8", fontSize: 13, fontWeight: "700" },
+  chipTextActive: { color: "#FFFFFF" },
+  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  empty: { alignItems: "center", marginTop: 80 },
+  emptyText: { color: "#94A3B8", marginTop: 12, fontSize: 16 },
+  card: { backgroundColor: "#111827", borderRadius: 18, padding: 12, flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 12 },
+  thumbnail: { width: 58, height: 58, borderRadius: 14, backgroundColor: "#1F2A43", justifyContent: "center", alignItems: "center" },
+  cardBody: { flex: 1 },
+  name: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  meta: { color: "#94A3B8", marginTop: 4, fontSize: 12, textTransform: "capitalize" },
 });

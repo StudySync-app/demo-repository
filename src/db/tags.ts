@@ -1,6 +1,6 @@
 import { db } from "./client";
 import { tags, contentTags } from "./schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export type TaggedCounts = {
   tasks: number;
@@ -66,7 +66,7 @@ export type Tag = {
 };
 
 export function addTag(name: string) {
-  db.insert(tags).values({ name }).run();
+  db.insert(tags).values({ name }).onConflictDoNothing().run();
 }
 
 export function getTags(): Tag[] {
@@ -74,11 +74,52 @@ export function getTags(): Tag[] {
 }
 
 export function attachTag(contentType: string, contentId: number, tagId: number) {
+  const existing = db
+    .select()
+    .from(contentTags)
+    .where(and(eq(contentTags.contentType, contentType), eq(contentTags.contentId, contentId), eq(contentTags.tagId, tagId)))
+    .get();
+  if (existing) return;
+
   db.insert(contentTags).values({
     contentType,
     contentId,
     tagId
   }).run();
+}
+
+export function getOrCreateTag(name: string) {
+  const clean = name.trim() || "Tagged";
+  const existing = db.select().from(tags).where(eq(tags.name, clean)).get() as Tag | undefined;
+  if (existing) return existing.id;
+  const result = db.insert(tags).values({ name: clean }).run();
+  return Number(result.lastInsertRowId);
+}
+
+export function isContentTagged(contentType: string, contentId: number) {
+  const row = db
+    .select()
+    .from(contentTags)
+    .where(and(eq(contentTags.contentType, contentType), eq(contentTags.contentId, contentId)))
+    .get();
+  return !!row;
+}
+
+export function toggleContentTag(contentType: string, contentId: number, tagName = "Tagged") {
+  const existing = db
+    .select()
+    .from(contentTags)
+    .where(and(eq(contentTags.contentType, contentType), eq(contentTags.contentId, contentId)))
+    .get();
+
+  if (existing) {
+    db.delete(contentTags).where(eq(contentTags.id, existing.id)).run();
+    return false;
+  }
+
+  const tagId = getOrCreateTag(tagName);
+  attachTag(contentType, contentId, tagId);
+  return true;
 }
 
 export function getTagsForContent(contentType: string, contentId: number) {

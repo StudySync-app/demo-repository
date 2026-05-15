@@ -9,11 +9,30 @@ import { useAppSettings } from "../settings/AppSettingsContext";
 type SettingsStackParamList = {
   SettingsMain: undefined;
   MyAccount: undefined;
+  PersonalDetails: undefined;
+  Address: undefined;
+  Payments: undefined;
   Personalization: undefined;
+  ThemeMode: undefined;
+  Language: undefined;
+  FontSize: undefined;
   Notifications: undefined;
+  DisableNotifications: undefined;
+  NotificationCategories: undefined;
+  SoundVibration: undefined;
   StorageSync: undefined;
   Security: undefined;
+  TwoFactor: undefined;
+  ChangePassword: undefined;
+  RecoveryPhone: undefined;
+  RecoveryEmail: undefined;
   StudySync: undefined;
+  AIQuiz: undefined;
+  AIAnswer: undefined;
+  AISuggest: undefined;
+  AIAssist: undefined;
+  AIRemind: undefined;
+  AISummary: undefined;
 };
 
 type SettingsRouteName = keyof Omit<SettingsStackParamList, "SettingsMain">;
@@ -31,6 +50,39 @@ const settingsItems: Array<{
   { title: "StudySync AI", icon: "psychology", route: "StudySync" }
 ];
 
+const searchableSettings: Array<{
+  title: string;
+  icon: string;
+  route: SettingsRouteName;
+  parent?: string;
+}> = [
+  ...settingsItems,
+  { title: "Personal details", icon: "person", route: "PersonalDetails", parent: "My account" },
+  { title: "Address", icon: "home", route: "Address", parent: "My account" },
+  { title: "Home address", icon: "home", route: "Address", parent: "Address" },
+  { title: "Work address", icon: "business", route: "Address", parent: "Address" },
+  { title: "Payments & subscriptions", icon: "credit-card", route: "Payments", parent: "My account" },
+  { title: "Dark or light mode", icon: "dark-mode", route: "ThemeMode", parent: "Personalization" },
+  { title: "Language", icon: "language", route: "Language", parent: "Personalization" },
+  { title: "Font size & style", icon: "format-size", route: "FontSize", parent: "Personalization" },
+  { title: "Dyslexia-Friendly Font", icon: "format-size", route: "FontSize", parent: "Font size & style" },
+  { title: "Disable all notifications", icon: "notifications-off", route: "DisableNotifications", parent: "Notifications" },
+  { title: "Notifications categories", icon: "checklist", route: "NotificationCategories", parent: "Notifications" },
+  { title: "Sound & vibration", icon: "volume-up", route: "SoundVibration", parent: "Notifications" },
+  { title: "Storage used space", icon: "storage", route: "StorageSync", parent: "Storage & sync" },
+  { title: "Manage backups", icon: "backup", route: "StorageSync", parent: "Storage & sync" },
+  { title: "Two-factor authentication", icon: "verified-user", route: "TwoFactor", parent: "Security" },
+  { title: "Change password", icon: "lock", route: "ChangePassword", parent: "Security" },
+  { title: "Recovery phone", icon: "phone", route: "RecoveryPhone", parent: "Security" },
+  { title: "Recovery email", icon: "email", route: "RecoveryEmail", parent: "Security" },
+  { title: "Generate quiz questions", icon: "quiz", route: "AIQuiz", parent: "StudySync AI" },
+  { title: "Answer any questions", icon: "question-answer", route: "AIAnswer", parent: "StudySync AI" },
+  { title: "AI suggest", icon: "tips-and-updates", route: "AISuggest", parent: "StudySync AI" },
+  { title: "AI assist", icon: "auto-awesome", route: "AIAssist", parent: "StudySync AI" },
+  { title: "Remind me AI", icon: "alarm", route: "AIRemind", parent: "StudySync AI" },
+  { title: "AI note summarization", icon: "summarize", route: "AISummary", parent: "StudySync AI" },
+];
+
 export default function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList, "SettingsMain">>();
   const { isLight, t, textScale } = useAppSettings();
@@ -39,9 +91,10 @@ export default function SettingsScreen() {
 
   const filteredItems = useMemo(
     () =>
-      settingsItems.filter((item) =>
-        t(item.title).toLowerCase().includes(searchQuery.trim().toLowerCase())
-      ),
+      (searchQuery.trim() ? searchableSettings : settingsItems).filter((item) => {
+        const q = searchQuery.trim().toLowerCase();
+        return !q || t(item.title).toLowerCase().includes(q) || item.parent?.toLowerCase().includes(q);
+      }),
     [searchQuery, t]
   );
 
@@ -112,6 +165,9 @@ export default function SettingsScreen() {
               />
               </View>
             <Text style={[styles.settingText, isLight && styles.lightTitle, { fontSize: 15 * textScale }]}>{t(item.title)}</Text>
+            {"parent" in item && item.parent ? (
+              <Text style={[styles.settingParent, isLight && styles.lightSubtitle]}>{t(item.parent)}</Text>
+            ) : null}
           </TouchableOpacity>
         ))}
         {filteredItems.length === 0 && (
@@ -275,6 +331,14 @@ titleRow: {
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600"
+  },
+  settingParent: {
+    color: "#A3AED0",
+    fontSize: 11,
+    marginLeft: 8,
+  },
+  lightSubtitle: {
+    color: "#64748B"
   },
 
   emptyText: {
