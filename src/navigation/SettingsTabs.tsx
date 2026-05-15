@@ -16,9 +16,12 @@ import {
   AIRemindScreen,
   AISuggestScreen,
   AddressScreen,
+  BackupManagerScreen,
   ChangePasswordScreen,
+  CloudSyncScreen,
   DisableNotificationsScreen,
   FontSizeScreen,
+  ImportedFilesManagerScreen,
   LanguageScreen,
   NotificationCategoriesScreen,
   PaymentsScreen,
@@ -29,6 +32,7 @@ import {
   StorageSyncScreen,
   ThemeModeScreen,
   TwoFactorScreen,
+  UsedSpaceScreen,
 } from "../screens/Settings Screens/SettingsDetailScreens";
 
 const Stack = createNativeStackNavigator();
@@ -44,6 +48,10 @@ export default function SettingsTabs() {
       <Stack.Screen name="NotificationCategories" component={NotificationCategoriesScreen} />
       <Stack.Screen name="SoundVibration" component={SoundVibrationScreen} />
       <Stack.Screen name="StorageSync" component={StorageSyncScreen} />
+      <Stack.Screen name="UsedSpace" component={UsedSpaceScreen} />
+      <Stack.Screen name="BackupManager" component={BackupManagerScreen} />
+      <Stack.Screen name="ImportedFilesManager" component={ImportedFilesManagerScreen} />
+      <Stack.Screen name="CloudSync" component={CloudSyncScreen} />
       <Stack.Screen name="Security" component={SecurityScreens} />
       <Stack.Screen name="StudySync" component={StudySyncScreen} />
       <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />

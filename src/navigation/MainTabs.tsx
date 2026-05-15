@@ -14,6 +14,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 
 import { DeviceEventEmitter } from "react-native";
+import { useAppSettings } from "../settings/AppSettingsContext";
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +26,7 @@ const Placeholder = () => null;
 export default function MainTabs() {
   const [isSheetVisible, setSheetVisible] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const { isLight, textScale } = useAppSettings();
   
   useEffect(() => {
   const loadUser = async () => {
@@ -111,16 +113,16 @@ useEffect(() => {
               ? COLORS.primary 
               : color;
             return (
-              <Text style={{ color: activeColor, fontSize: 10, fontWeight: '600' }}>
+              <Text style={{ color: activeColor, fontSize: 10 * textScale, fontWeight: '600' }}>
                 {children}
               </Text>
             );
           },
           tabBarActiveTintColor: COLORS.primary,
-          tabBarInactiveTintColor: "white",
+          tabBarInactiveTintColor: isLight ? "#64748B" : "white",
           
           tabBarStyle: {
-            backgroundColor: "#1A2535",
+            backgroundColor: isLight ? "#FFFFFF" : "#1A2535",
             borderTopWidth: 0,
             elevation: 0,
             height: 120,

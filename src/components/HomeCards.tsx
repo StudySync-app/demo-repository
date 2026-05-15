@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { useAppSettings } from "../settings/AppSettingsContext";
 
 // These types match your original code
 export type SectionVariant = "files" | "tagged" | "folders";
@@ -53,6 +54,7 @@ export const HomeCards: React.FC<HomeCardsProps> = ({
   needsHorizontalCardScroll,
   spacing
 }) => {
+  const { isLight, textScale } = useAppSettings();
   const kinds: CardKind[] = ["todos", "media", "notes"];
   const titles: Record<CardKind, string> = {
     todos: "My to dos",
@@ -90,6 +92,7 @@ export const HomeCards: React.FC<HomeCardsProps> = ({
         {...wrapProps}
         style={[
           styles.card,
+          isLight && styles.lightCard,
           {
             width: fittedCardWidth,
             height: fittedCardHeight,
@@ -127,18 +130,18 @@ export const HomeCards: React.FC<HomeCardsProps> = ({
         </View>
         </View>
         
-        <Text style={[styles.cardTitle, { fontSize: titleFont, lineHeight: titleFont + 2 }]} numberOfLines={2}>
+        <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: titleFont * textScale, lineHeight: titleFont * textScale + 2 }]} numberOfLines={2}>
           {titles[kind]}
         </Text>
         
         {sub ? (
-          <Text style={[styles.cardSubtitle, { fontSize: subFont }]}>{sub}</Text>
+          <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle, { fontSize: subFont * textScale }]}>{sub}</Text>
         ) : (
           <View style={styles.subtitleSpacer} />
         )}
         
         <View style={styles.cardFooter}>
-          <Text style={[styles.cardCount, { fontSize: countFont }]}>{count} item(s)</Text>
+          <Text style={[styles.cardCount, isLight && styles.lightSubtitle, { fontSize: countFont * textScale }]}>{count} item(s)</Text>
           <TouchableOpacity hitSlop={10}>
             <MaterialIcons name="more-vert" size={moreIconSize} color="#94A3B8" />
           </TouchableOpacity>
@@ -170,10 +173,13 @@ const styles = StyleSheet.create({
   cardRowScrollContent: { flexDirection: "row", alignItems: "stretch", paddingBottom: 4 },
   row: { flexDirection: "row", justifyContent: "flex-start", alignItems: "stretch" },
   card: { backgroundColor: "#1A2535", borderRadius: 20, padding: 8 },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
   primaryIconWrap: { justifyContent: "center", alignItems: "center" },
   cardTitle: { color: "#FFFFFF", fontWeight: "700", marginBottom: 2 },
+  lightTitle: { color: "#0F172A" },
   cardSubtitle: { color: "#9CA3AF", marginBottom: 4, minHeight: 11 },
+  lightSubtitle: { color: "#64748B" },
   subtitleSpacer: { minHeight: 11, marginBottom: 4 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: "auto" },
   cardCount: { color: "#9CA3AF", flex: 1, marginRight: 4 }

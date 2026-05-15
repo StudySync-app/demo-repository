@@ -10,15 +10,16 @@ import {
   TouchableOpacity,
   View,
   Share,
+  Linking,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 import { getFolders } from "../../db/folders";
-import { getMedia } from "../../db/media";
+import { deleteMedia, getMedia } from "../../db/media";
 import { getNotes } from "../../db/notes";
-import { getSetting, getSettingsSnapshot } from "../../db/settings";
+import { getSetting, getSettingsSnapshot, setSetting } from "../../db/settings";
 import { getTasks } from "../../db/tasks";
 import useNetwork from "../../hooks/useNetwork";
 import { supabase } from "../../lib/supabase";
@@ -121,13 +122,23 @@ function useStoredSetting<T>(key: string, fallback: T) {
 }
 
 export function PersonalDetailsScreen() {
+  const [, setStoredName] = useStoredSetting("profileName", "");
+  const [, setStoredBirthday] = useStoredSetting("profileBirthday", "");
+  const [, setStoredGender] = useStoredSetting("profileGender", "");
+  const [, setStoredAvatarUrl] = useStoredSetting("profileAvatarUrl", "");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [name, setName] = useState("StudySync user");
+  const [birthday, setBirthday] = useState("");
+  const [gender, setGender] = useState("");
   const [email, setEmail] = useState("");
 
   useFocusEffect(
     useCallback(() => {
       supabase.auth.getUser().then(({ data }) => {
-        setName(data.user?.user_metadata?.full_name || "StudySync user");
+        setName(getSetting("profileName", data.user?.user_metadata?.full_name || "StudySync user"));
+        setBirthday(getSetting("profileBirthday", data.user?.user_metadata?.birthday || ""));
+        setGender(getSetting("profileGender", data.user?.user_metadata?.gender || ""));
+        setAvatarUrl(getSetting("profileAvatarUrl", data.user?.user_metadata?.avatar_url || ""));
         setEmail(data.user?.email || "");
       });
     }, [])
@@ -185,24 +196,45 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
     return;
   }
 
+  setAvatarUrl(publicUrl);
+  setStoredAvatarUrl(publicUrl);
   await supabase.auth.refreshSession();
-
   DeviceEventEmitter.emit("avatarUpdated", publicUrl);
 
   Alert.alert("Success", "Profile picture updated!");
 };
+
+  const saveProfile = async () => {
+    setStoredName(name.trim());
+    setStoredBirthday(birthday.trim());
+    setStoredGender(gender.trim());
+
+    const { error } = await supabase.auth.updateUser({
+      data: {
+        full_name: name.trim(),
+        birthday: birthday.trim(),
+        gender: gender.trim(),
+        avatar_url: avatarUrl,
+      },
+    });
+
+    await supabase.auth.refreshSession();
+    DeviceEventEmitter.emit("profileUpdated", { name: name.trim(), birthday: birthday.trim(), gender: gender.trim() });
+    Alert.alert(error ? "Saved locally" : "Profile saved", error?.message || "Your profile details were updated.");
+  };
 
   return (
     <ScreenShell title="Personal details">
       <Text style={styles.sectionCaption}>Basic info</Text>
       <SettingsRow
         title="Profile picture"
-        subtitle="Tap to upload your profile image."
+        subtitle={avatarUrl ? "Profile image is set. Tap to replace it." : "Tap to upload your profile image."}
         icon="account-circle"
         onPress={handlePickImage}/>      
-      <SettingsRow title="Name" subtitle={name} icon="badge" />
-      <SettingsRow title="Birthday" subtitle="Not set" icon="cake" />
-      <SettingsRow title="Gender" subtitle="Not set" icon="person" />
+      <ThemedInput value={name} onChangeText={setName} placeholder="Name" />
+      <ThemedInput value={birthday} onChangeText={setBirthday} placeholder="Birthday" />
+      <ThemedInput value={gender} onChangeText={setGender} placeholder="Gender" />
+      <PrimaryButton title="Save personal details" onPress={saveProfile} />
       <Text style={styles.sectionCaption}>Contact info</Text>
       <SettingsRow title="Email" subtitle={email || "No email loaded"} icon="email" />
       <SettingsRow title="Phone" subtitle={getSetting("recoveryPhone", "+63 912345678")} icon="phone" />
@@ -231,6 +263,26 @@ export function PaymentsScreen() {
   );
 }
 
+function ThemedInput(props: React.ComponentProps<typeof TextInput>) {
+  const { isLight, textScale } = useAppSettings();
+  return (
+    <TextInput
+      placeholderTextColor={isLight ? "#64748B" : "#A3AED0"}
+      {...props}
+      style={[styles.input, isLight && styles.lightInput, { fontSize: 15 * textScale }, props.style]}
+    />
+  );
+}
+
+function PrimaryButton({ title, onPress }: { title: string; onPress: () => void }) {
+  const { textScale } = useAppSettings();
+  return (
+    <TouchableOpacity style={styles.primaryButton} onPress={onPress}>
+      <Text style={[styles.primaryText, { fontSize: 14 * textScale }]}>{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
 export function AddressScreen() {
   const [home, setHome] = useStoredSetting("homeAddress", "");
   const [work, setWork] = useStoredSetting("workAddress", "");
@@ -240,16 +292,16 @@ export function AddressScreen() {
   return (
     <ScreenShell title="Address">
       <Text style={styles.sectionCaption}>Home</Text>
-      <TextInput value={homeDraft} onChangeText={setHomeDraft} placeholder="Home address" placeholderTextColor="#A3AED0" style={styles.input} />
+      <ThemedInput value={homeDraft} onChangeText={setHomeDraft} placeholder="Home address" />
+      <SettingsRow title="Saved home" subtitle={home || "No home address saved yet."} icon="home" />
       <Text style={styles.sectionCaption}>Work</Text>
-      <TextInput value={workDraft} onChangeText={setWorkDraft} placeholder="Work address" placeholderTextColor="#A3AED0" style={styles.input} />
-      <TouchableOpacity style={styles.primaryButton} onPress={() => {
+      <ThemedInput value={workDraft} onChangeText={setWorkDraft} placeholder="Work address" />
+      <SettingsRow title="Saved work" subtitle={work || "No work address saved yet."} icon="business" />
+      <PrimaryButton title="Save addresses" onPress={() => {
         setHome(homeDraft.trim());
         setWork(workDraft.trim());
         Alert.alert("Address saved", "Home and Work addresses were updated.");
-      }}>
-        <Text style={styles.primaryText}>Save addresses</Text>
-      </TouchableOpacity>
+      }} />
     </ScreenShell>
   );
 }
@@ -377,6 +429,7 @@ export function DisableNotificationsScreen() {
 
 export function StorageSyncScreen() {
   const isOnline = useNetwork();
+  const navigation = useNavigation<any>();
   const [counts, setCounts] = useState({ tasks: 0, notes: 0, media: 0, folders: 0 });
   const [lastCleared, setLastCleared] = useStoredSetting("lastCacheClear", "Never");
   const [lastBackup, setLastBackup] = useStoredSetting("lastBackup", "Never");
@@ -411,8 +464,8 @@ export function StorageSyncScreen() {
 
   return (
     <ScreenShell title="Storage & sync">
-      <SettingsRow title="View used space" subtitle={`${Math.max(1, Math.round(usedBytes / 1024))} KB used by local StudySync data.`} icon="storage" />
-      <SettingsRow title="Manage backups" subtitle={`Last backup: ${lastBackup}`} icon="backup" onPress={() => createBackup().catch(() => Alert.alert("Backup failed", "Could not create a local backup."))} />
+      <SettingsRow title="View used space" subtitle={`${Math.max(1, Math.round(usedBytes / 1024))} KB used by local StudySync data.`} icon="storage" onPress={() => navigation.navigate("UsedSpace")} />
+      <SettingsRow title="Manage backups" subtitle={`Last backup: ${lastBackup}`} icon="backup" onPress={() => navigation.navigate("BackupManager")} />
       <SettingsRow title="Automatic backups" subtitle="Manual JSON backups are available from this screen." icon="cloud-sync" right={<Switch value={autoBackupsEnabled} onValueChange={setAutoBackupsEnabled} />} />
       <SettingsRow
         title="Clear cache"
@@ -424,8 +477,8 @@ export function StorageSyncScreen() {
           Alert.alert("Cache checked", "No temporary app cache was found. Your tasks, notes, media, and folders were kept.");
         }}
       />
-      <SettingsRow title="Manage imported files" subtitle={`${counts.media} local media file(s) imported.`} icon="folder" />
-      <SettingsRow title="Sync files" subtitle={isOnline ? "Online. Local backup/export is available." : "Offline. Local device storage is active."} icon="sync" />
+      <SettingsRow title="Manage imported files" subtitle={`${counts.media} local media file(s) imported.`} icon="folder" onPress={() => navigation.navigate("ImportedFilesManager")} />
+      <SettingsRow title="Sync files" subtitle={isOnline ? "Online. Tap to upload a JSON backup to Supabase." : "Offline. Local device storage is active."} icon="sync" onPress={() => navigation.navigate("CloudSync")} />
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Local storage snapshot</Text>
         <Text style={styles.cardSubtitle}>{counts.tasks} tasks · {counts.notes} notes · {counts.media} media · {counts.folders} folders</Text>
@@ -497,6 +550,152 @@ export function RecoveryEmailScreen() {
       }}>
         <Text style={styles.primaryText}>Save recovery email</Text>
       </TouchableOpacity>
+    </ScreenShell>
+  );
+}
+
+export function UsedSpaceScreen() {
+  const { isLight } = useAppSettings();
+  const tasks = getTasks();
+  const notes = getNotes();
+  const media = getMedia();
+  const folders = getFolders();
+  const rows = [
+    { label: "Tasks", count: tasks.length, bytes: JSON.stringify(tasks).length, icon: "checklist" },
+    { label: "Notes", count: notes.length, bytes: JSON.stringify(notes).length, icon: "notes" },
+    { label: "Media", count: media.length, bytes: JSON.stringify(media).length, icon: "perm-media" },
+    { label: "Folders", count: folders.length, bytes: JSON.stringify(folders).length, icon: "folder" },
+  ];
+  const total = rows.reduce((sum, row) => sum + row.bytes, 0);
+
+  return (
+    <ScreenShell title="Used space">
+      <View style={[styles.card, isLight && styles.lightCard]}>
+        <Text style={[styles.cardTitle, isLight && styles.lightTitle]}>Total local data</Text>
+        <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle]}>{formatBytes(total)}</Text>
+      </View>
+      {rows.map((row) => (
+        <SettingsRow key={row.label} title={row.label} subtitle={`${row.count} item(s) · ${formatBytes(row.bytes)}`} icon={row.icon} />
+      ))}
+    </ScreenShell>
+  );
+}
+
+export function BackupManagerScreen() {
+  const [backupTasks, setBackupTasks] = useStoredSetting("backupTasks", true);
+  const [backupNotes, setBackupNotes] = useStoredSetting("backupNotes", true);
+  const [backupMedia, setBackupMedia] = useStoredSetting("backupMedia", true);
+  const [backupFolders, setBackupFolders] = useStoredSetting("backupFolders", true);
+  const [lastBackup, setLastBackup] = useStoredSetting("lastBackup", "Never");
+
+  const createBackup = async () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      ...(backupTasks ? { tasks: getTasks() } : {}),
+      ...(backupNotes ? { notes: getNotes() } : {}),
+      ...(backupMedia ? { media: getMedia() } : {}),
+      ...(backupFolders ? { folders: getFolders() } : {}),
+      settings: getSettingsSnapshot(),
+    };
+    const file = new File(Paths.document, `studysync-selected-backup-${Date.now()}.json`);
+    file.write(JSON.stringify(payload, null, 2));
+    const stamp = new Date().toLocaleString();
+    setLastBackup(stamp);
+    await Share.share({ title: "StudySync backup", message: "Selected backup created.", url: file.uri });
+  };
+
+  return (
+    <ScreenShell title="Manage backups">
+      <SettingsRow title="Tasks" subtitle="Include to-do tasks." icon="checklist" right={<Switch value={backupTasks} onValueChange={setBackupTasks} />} />
+      <SettingsRow title="Notes" subtitle="Include study notes." icon="notes" right={<Switch value={backupNotes} onValueChange={setBackupNotes} />} />
+      <SettingsRow title="Media" subtitle="Include imported media records." icon="perm-media" right={<Switch value={backupMedia} onValueChange={setBackupMedia} />} />
+      <SettingsRow title="Folders" subtitle="Include folder records." icon="folder" right={<Switch value={backupFolders} onValueChange={setBackupFolders} />} />
+      <SettingsRow title="Last backup" subtitle={lastBackup} icon="history" />
+      <PrimaryButton title="Create selected backup" onPress={() => createBackup().catch(() => Alert.alert("Backup failed", "Could not create the selected backup."))} />
+    </ScreenShell>
+  );
+}
+
+export function ImportedFilesManagerScreen() {
+  const [media, setMedia] = useState(getMedia());
+
+  const refresh = () => setMedia(getMedia());
+  const remove = (id: number, name: string) => {
+    Alert.alert("Delete imported file", `Remove "${name || "media file"}"?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => {
+        deleteMedia(id);
+        refresh();
+      }},
+    ]);
+  };
+
+  return (
+    <ScreenShell title="Manage imported files">
+      {media.length === 0 ? (
+        <SettingsRow title="No imported files" subtitle="Imported audio, video, and image records will appear here." icon="folder-open" />
+      ) : (
+        media.map((item) => (
+          <SettingsRow
+            key={item.id}
+            title={item.name || "Imported file"}
+            subtitle={`${item.type || "file"} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : "No date"}`}
+            icon={item.type === "audio" ? "audiotrack" : item.type === "video" ? "movie" : "image"}
+            onPress={() => item.uri && Linking.openURL(item.uri)}
+            right={<TouchableOpacity onPress={() => remove(item.id, item.name || "")} hitSlop={10}><MaterialIcons name="delete-outline" size={22} color="#F87171" /></TouchableOpacity>}
+          />
+        ))
+      )}
+    </ScreenShell>
+  );
+}
+
+export function CloudSyncScreen() {
+  const isOnline = useNetwork();
+  const [lastCloudSync, setLastCloudSync] = useStoredSetting("lastCloudSync", "Never");
+
+  const syncNow = async () => {
+    if (!isOnline) {
+      Alert.alert("Offline", "Connect to the internet before cloud sync.");
+      return;
+    }
+
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) {
+      Alert.alert("Sign in required", "Sign in before cloud sync.");
+      return;
+    }
+
+    const payload = JSON.stringify({
+      syncedAt: new Date().toISOString(),
+      tasks: getTasks(),
+      notes: getNotes(),
+      media: getMedia(),
+      folders: getFolders(),
+      settings: getSettingsSnapshot(),
+    }, null, 2);
+    const path = `${userId}/studysync-sync-${Date.now()}.json`;
+    const { error } = await supabase.storage.from("backups").upload(path, payload, {
+      contentType: "application/json",
+      upsert: true,
+    });
+
+    if (error) {
+      Alert.alert("Cloud sync failed", `${error.message}\n\nMake sure a Supabase Storage bucket named "backups" exists.`);
+      return;
+    }
+
+    const stamp = new Date().toLocaleString();
+    setLastCloudSync(stamp);
+    Alert.alert("Cloud sync complete", "Your local StudySync data was uploaded to Supabase backups.");
+  };
+
+  return (
+    <ScreenShell title="Cloud sync">
+      <SettingsRow title="Connection" subtitle={isOnline ? "Online" : "Offline"} icon="wifi" />
+      <SettingsRow title="Last cloud sync" subtitle={lastCloudSync} icon="cloud-done" />
+      <PrimaryButton title="Sync files now" onPress={() => syncNow().catch((error) => Alert.alert("Cloud sync failed", error.message || "Could not sync files."))} />
     </ScreenShell>
   );
 }
@@ -588,6 +787,12 @@ export function SettingsSummaryCard() {
   );
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "transparent" },
   lightRoot: { flex: 1, backgroundColor: "#F4F7FB" },
@@ -613,6 +818,7 @@ const styles = StyleSheet.create({
   segmentActive: { backgroundColor: "#58A6FF" },
   segmentText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
   input: { backgroundColor: "#1A2535", borderRadius: 14, color: "#FFFFFF", paddingHorizontal: 14, minHeight: 48, marginBottom: 12 },
+  lightInput: { backgroundColor: "#FFFFFF", color: "#0F172A", borderWidth: 1, borderColor: "#DBE4F0" },
   multiline: { minHeight: 120, paddingTop: 14, textAlignVertical: "top" },
   primaryButton: { minHeight: 48, borderRadius: 14, backgroundColor: "#007AFF", alignItems: "center", justifyContent: "center", marginBottom: 12 },
   disabledButton: { opacity: 0.45 },

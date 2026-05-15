@@ -5,7 +5,6 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 const items = [
   { title: "Dark or light mode", subtitle: "Choose the app appearance.", icon: "dark-mode", route: "ThemeMode" },
-  { title: "Language", subtitle: "Select your preferred language.", icon: "language", route: "Language" },
   { title: "Font size & style", subtitle: "Adjust reading comfort.", icon: "format-size", route: "FontSize" },
 ];
 

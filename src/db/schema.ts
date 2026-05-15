@@ -27,6 +27,7 @@ export const notes = sqliteTable("notes", {
   audioList: text("audio_list"), 
   imageList: text("image_list"), 
   videoList: text("video_list"), 
+  pdfList: text("pdf_list"),
   folderId: integer("folder_id"),
   synced: integer("synced", { mode: "boolean" }).default(false),
   createdAt: text("created_at"),

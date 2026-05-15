@@ -10,12 +10,14 @@ import { getNotes, Note } from "../db/notes";
 import { getMedia, MediaItem } from "../db/media";
 import { getTaggedCountsByContentType, getTaggedContentIds } from "../db/tags";
 import { SPACING } from "../constants/theme";
+import { useAppSettings } from "../settings/AppSettingsContext";
 
 type HomeStackParamList = {
   Dashboard: undefined;
   FileTaskManager: undefined;
   FileNotesManager: undefined;
   FileMediaManager: undefined;
+  FileFolderManager: undefined;
   FolderedTaskManager: undefined;
   FolderedNotesManager: undefined;
   FolderedMediaManager: undefined;
@@ -81,6 +83,7 @@ export default function DashboardScreen() {
   const { width: windowWidth } = useWindowDimensions();
   const navigation =
     useNavigation<NativeStackNavigationProp<HomeStackParamList>>();
+  const { isLight, textScale } = useAppSettings();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -193,14 +196,9 @@ export default function DashboardScreen() {
       : formatRelativeTime(latestCreatedAt(list));
   };
 
-  return (
-    <ImageBackground
-    source={require("../../assets/dashboard_bg.png")}
-    style={{ flex: 1 }}
-    resizeMode="cover"
-  >
+  const content = (
     <ScrollView
-      style={styles.container}
+      style={[styles.container, isLight && styles.lightContainer]}
       contentContainerStyle={[
         styles.contentContainer,
         {
@@ -218,10 +216,10 @@ export default function DashboardScreen() {
             style={styles.brandLogo}
             resizeMode="contain"
           />
-          <Text style={styles.brandLetter}>StudySync</Text>
+          <Text style={[styles.brandLetter, isLight && styles.lightText, { fontSize: 22 * textScale }]}>StudySync</Text>
         </View>
 
-        <TouchableOpacity style={styles.searchBtn}>
+        <TouchableOpacity style={[styles.searchBtn, isLight && styles.lightCard]}>
         <Image
           source={require("../../assets/search.png")}
           style={{
@@ -234,7 +232,7 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My files</Text>
+        <Text style={[styles.sectionTitle, isLight && styles.lightText, { fontSize: 15 * textScale }]}>My files</Text>
         <HomeCards
           variant="files"
           counts={{
@@ -252,7 +250,7 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tagged files</Text>
+        <Text style={[styles.sectionTitle, isLight && styles.lightText, { fontSize: 15 * textScale }]}>Tagged files</Text>
         <HomeCards
           variant="tagged"
           counts={{
@@ -270,7 +268,7 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My folders</Text>
+        <Text style={[styles.sectionTitle, isLight && styles.lightText, { fontSize: 15 * textScale }]}>My folders</Text>
         <HomeCards
           variant="folders"
           counts={{
@@ -287,12 +285,29 @@ export default function DashboardScreen() {
         />
       </View>
     </ScrollView>
-</ImageBackground>
+  );
+
+  if (isLight) {
+    return <View style={styles.lightRoot}>{content}</View>;
+  }
+
+  return (
+    <ImageBackground
+      source={require("../../assets/dashboard_bg.png")}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      {content}
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1},
+  lightRoot: { flex: 1, backgroundColor: "#F4F7FB" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
+  lightText: { color: "#0F172A" },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   contentContainer: { paddingHorizontal: SPACING.screen },
   headerRow: {flexDirection: "row", justifyContent: "space-between", alignItems: "center",marginBottom: 40},
   brandRow: {flexDirection: "row",alignItems: "center"},
