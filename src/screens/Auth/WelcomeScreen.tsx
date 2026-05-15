@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
+import { Alert, Linking, View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome as Icon } from '@expo/vector-icons';
+import { supabase } from "../../lib/supabase";
 
 // ADDED ForgotPassword HERE TO FIX THE ERROR
 type RootStackParamList = {
@@ -16,6 +17,20 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Welcome">;
 type Props = { navigation: NavigationProp };
 
 export default function WelcomeScreen({ navigation }: Props) {
+  const handleSocialLogin = async (provider: "google" | "github" | "facebook") => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { skipBrowserRedirect: true },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("Could not start social sign in.");
+      await Linking.openURL(data.url);
+    } catch (error: any) {
+      Alert.alert("Social sign in failed", error.message || "Try signing in with email and password.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -64,13 +79,13 @@ export default function WelcomeScreen({ navigation }: Props) {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Sign in options</Text>
           <View style={styles.socialIcons}>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialLogin("google")}>
               <Icon name="google" size={24} color="#DB4437" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialLogin("github")}>
               <Icon name="github" size={24} color="#E5E7EB" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialLogin("facebook")}>
               <Icon name="facebook" size={24} color="#3B82F6" />
             </TouchableOpacity>
           </View>

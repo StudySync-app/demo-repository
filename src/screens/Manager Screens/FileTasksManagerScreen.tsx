@@ -13,6 +13,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 import { useTaskStore } from "../../store/useTaskStore"; 
 import { deleteTask, toggleTaskCompleted, type Task } from "../../db/tasks";
+import { isContentTagged, toggleContentTag } from "../../db/tags";
 import { TaskCard } from "../../components/TaskCard";
 
 export default function FileTasksManagerScreen() {
@@ -35,6 +36,21 @@ export default function FileTasksManagerScreen() {
       showArchived ? task.completed : !task.completed
     );
   }, [tasks, showArchived]);
+
+  const groupedTasks = useMemo(() => {
+    const groups = [
+      { key: "urgent", label: "Urgent", items: [] as Task[] },
+      { key: "important", label: "Important", items: [] as Task[] },
+      { key: "minor", label: "Minor", items: [] as Task[] },
+    ];
+
+    displayedTasks.forEach((task) => {
+      const key = task.priority === "urgent" || task.priority === "important" ? task.priority : "minor";
+      groups.find((group) => group.key === key)?.items.push(task);
+    });
+
+    return groups.filter((group) => group.items.length > 0);
+  }, [displayedTasks]);
 
   const getPriorityInfo = (priority: string) => {
     switch (priority) {
@@ -123,28 +139,37 @@ const handleRestore = async (taskId: number) => {
               </Text>
             </View>
           ) : (
-            displayedTasks.map((task: Task) => {
-              const priorityInfo = getPriorityInfo(task.priority || "");
-              return (
-                <TaskCard 
-                  key={task.id}
-                  title={task.title}
-                  subtitle={task.description || "No description"}
-                  dueDate={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No date"}
-                  priority={priorityInfo.label}
-                  priorityColor={priorityInfo.color}
-                  progress={task.status || "todo"}
-                  isCompleted={!!task.completed}
-                  // Logic: Hide checkbox if showArchived is true
-                  onToggleCheck={showArchived ? undefined : async () => {
-                    await toggleTaskCompleted(task.id, !task.completed);
-                    loadTasks();
-                  }}
-                  onEdit={task.completed ? () => handleRestore(task.id) : () => navigation.navigate("TasksScreen", { task })}                  
-                  onDelete={() => handleDelete(task)}
-                />
-              );
-            })
+            groupedTasks.map((group) => (
+              <View key={group.key}>
+                {!showArchived && <Text style={styles.groupTitle}>{group.label}</Text>}
+                {group.items.map((task: Task) => {
+                  const priorityInfo = getPriorityInfo(task.priority || "");
+                  return (
+                    <TaskCard 
+                      key={task.id}
+                      title={task.title}
+                      subtitle={task.description || "No description"}
+                      dueDate={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No date"}
+                      priority={showArchived ? "Completed" : priorityInfo.label}
+                      priorityColor={showArchived ? "#22C55E" : priorityInfo.color}
+                      progress={task.status || "todo"}
+                      isCompleted={!!task.completed}
+                      onToggleCheck={showArchived ? undefined : async () => {
+                        await toggleTaskCompleted(task.id, !task.completed);
+                        loadTasks();
+                      }}
+                      onEdit={task.completed ? () => handleRestore(task.id) : () => navigation.navigate("TasksScreen", { task })}                  
+                      onDelete={() => handleDelete(task)}
+                      onTagPress={() => {
+                        toggleContentTag("task", task.id);
+                        loadTasks();
+                      }}
+                      tagged={isContentTagged("task", task.id)}
+                    />
+                  );
+                })}
+              </View>
+            ))
           )}
         </View>
       </ScrollView>
@@ -167,6 +192,7 @@ const styles = StyleSheet.create({
   actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   activeActionBtn: { backgroundColor: "#4B76E7" }, // Highlight when viewing archive
   content: { padding: 20 },
+  groupTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800", marginBottom: 10, marginTop: 6 },
   emptyContainer: { alignItems: 'center', marginTop: 60 },
   emptyText: { color: "#94A3B8", textAlign: "center", marginTop: 12, fontSize: 16 }
 });

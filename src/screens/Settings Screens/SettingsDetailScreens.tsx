@@ -9,6 +9,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Share,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
@@ -26,11 +27,13 @@ import {
   answerStudyQuestion,
   generateQuizQuestions,
   prioritizeTask,
+  summarizeStudyNotes,
   suggestLearningResources,
   suggestStudySchedule,
 } from "../../lib/ai";
 
 import * as ImagePicker from "expo-image-picker";
+import { File, Paths } from "expo-file-system";
 
 import { DeviceEventEmitter } from "react-native";
 
@@ -208,12 +211,45 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
 }
 
 export function PaymentsScreen() {
+  const [paymentMethod, setPaymentMethod] = useStoredSetting("paymentMethod", "");
+  const [draft, setDraft] = useState(paymentMethod);
+
   return (
     <ScreenShell title="Payments & subscriptions">
       <Text style={styles.sectionCaption}>Payment method</Text>
-      <SettingsRow title="Manage payment methods" subtitle="No payment method is connected." icon="credit-card" />
-      <SettingsRow title="Payment info" subtitle="StudySync is running in demo mode." icon="receipt" />
+      <TextInput value={draft} onChangeText={setDraft} placeholder="Payment method label" placeholderTextColor="#A3AED0" style={styles.input} />
+      <TouchableOpacity style={styles.primaryButton} onPress={() => {
+        setPaymentMethod(draft.trim());
+        Alert.alert("Payment method saved", draft.trim() || "Payment method cleared.");
+      }}>
+        <Text style={styles.primaryText}>Save payment method</Text>
+      </TouchableOpacity>
+      <SettingsRow title="Manage payment methods" subtitle={paymentMethod || "No payment method is connected."} icon="credit-card" />
+      <SettingsRow title="Payment info" subtitle="Local payment preferences are saved on this device." icon="receipt" />
       <SettingsRow title="Subscriptions" subtitle="Current plan: Local MVP." icon="workspace-premium" />
+    </ScreenShell>
+  );
+}
+
+export function AddressScreen() {
+  const [home, setHome] = useStoredSetting("homeAddress", "");
+  const [work, setWork] = useStoredSetting("workAddress", "");
+  const [homeDraft, setHomeDraft] = useState(home);
+  const [workDraft, setWorkDraft] = useState(work);
+
+  return (
+    <ScreenShell title="Address">
+      <Text style={styles.sectionCaption}>Home</Text>
+      <TextInput value={homeDraft} onChangeText={setHomeDraft} placeholder="Home address" placeholderTextColor="#A3AED0" style={styles.input} />
+      <Text style={styles.sectionCaption}>Work</Text>
+      <TextInput value={workDraft} onChangeText={setWorkDraft} placeholder="Work address" placeholderTextColor="#A3AED0" style={styles.input} />
+      <TouchableOpacity style={styles.primaryButton} onPress={() => {
+        setHome(homeDraft.trim());
+        setWork(workDraft.trim());
+        Alert.alert("Address saved", "Home and Work addresses were updated.");
+      }}>
+        <Text style={styles.primaryText}>Save addresses</Text>
+      </TouchableOpacity>
     </ScreenShell>
   );
 }
@@ -343,6 +379,8 @@ export function StorageSyncScreen() {
   const isOnline = useNetwork();
   const [counts, setCounts] = useState({ tasks: 0, notes: 0, media: 0, folders: 0 });
   const [lastCleared, setLastCleared] = useStoredSetting("lastCacheClear", "Never");
+  const [lastBackup, setLastBackup] = useStoredSetting("lastBackup", "Never");
+  const [autoBackupsEnabled, setAutoBackupsEnabled] = useStoredSetting("autoBackupsEnabled", false);
 
   useFocusEffect(
     useCallback(() => {
@@ -355,8 +393,27 @@ export function StorageSyncScreen() {
     }, [])
   );
 
+  const snapshot = {
+    tasks: getTasks(),
+    notes: getNotes(),
+    media: getMedia(),
+    folders: getFolders(),
+  };
+  const usedBytes = JSON.stringify(snapshot).length;
+
+  const createBackup = async () => {
+    const file = new File(Paths.document, `studysync-backup-${Date.now()}.json`);
+    file.write(JSON.stringify({ exportedAt: new Date().toISOString(), ...snapshot, settings: getSettingsSnapshot() }, null, 2));
+    const stamp = new Date().toLocaleString();
+    setLastBackup(stamp);
+    await Share.share({ title: "StudySync backup", message: "StudySync backup created.", url: file.uri });
+  };
+
   return (
     <ScreenShell title="Storage & sync">
+      <SettingsRow title="View used space" subtitle={`${Math.max(1, Math.round(usedBytes / 1024))} KB used by local StudySync data.`} icon="storage" />
+      <SettingsRow title="Manage backups" subtitle={`Last backup: ${lastBackup}`} icon="backup" onPress={() => createBackup().catch(() => Alert.alert("Backup failed", "Could not create a local backup."))} />
+      <SettingsRow title="Automatic backups" subtitle="Manual JSON backups are available from this screen." icon="cloud-sync" right={<Switch value={autoBackupsEnabled} onValueChange={setAutoBackupsEnabled} />} />
       <SettingsRow
         title="Clear cache"
         subtitle={`Last checked: ${lastCleared}`}
@@ -368,7 +425,7 @@ export function StorageSyncScreen() {
         }}
       />
       <SettingsRow title="Manage imported files" subtitle={`${counts.media} local media file(s) imported.`} icon="folder" />
-      <SettingsRow title="Sync files" subtitle={isOnline ? "Online. Cloud sync is not enabled in this pass." : "Offline. Local device storage is active."} icon="sync" />
+      <SettingsRow title="Sync files" subtitle={isOnline ? "Online. Local backup/export is available." : "Offline. Local device storage is active."} icon="sync" />
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Local storage snapshot</Text>
         <Text style={styles.cardSubtitle}>{counts.tasks} tasks · {counts.notes} notes · {counts.media} media · {counts.folders} folders</Text>
@@ -422,17 +479,24 @@ export function RecoveryPhoneScreen() {
 }
 
 export function RecoveryEmailScreen() {
-  const [email, setEmail] = useState("");
+  const [savedEmail, setSavedEmail] = useStoredSetting("recoveryEmail", "");
+  const [email, setEmail] = useState(savedEmail);
 
   useFocusEffect(
     useCallback(() => {
-      supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email || getSetting("recoveryEmail", "")));
+      supabase.auth.getUser().then(({ data }) => setEmail(savedEmail || data.user?.email || ""));
     }, [])
   );
 
   return (
     <ScreenShell title="Recovery email">
-      <SettingsRow title={email || "No email loaded"} subtitle="Your Supabase account email is used for recovery." icon="email" />
+      <TextInput value={email} onChangeText={setEmail} placeholder="Recovery email" placeholderTextColor="#A3AED0" style={styles.input} autoCapitalize="none" keyboardType="email-address" />
+      <TouchableOpacity style={styles.primaryButton} onPress={() => {
+        setSavedEmail(email.trim().toLowerCase());
+        Alert.alert("Recovery email saved", email.trim() || "Recovery email cleared.");
+      }}>
+        <Text style={styles.primaryText}>Save recovery email</Text>
+      </TouchableOpacity>
     </ScreenShell>
   );
 }
@@ -513,6 +577,7 @@ export const AIAnswerScreen = () => <AIToggleScreen title="Answer any questions"
 export const AISuggestScreen = () => <AIToggleScreen title="AI suggest" settingKey="aiSuggestEnabled" placeholder="Enter a topic for learning resources..." action={suggestLearningResources} />;
 export const AIAssistScreen = () => <AIToggleScreen title="AI assist" settingKey="aiAssistEnabled" placeholder="Describe a task to prioritize..." action={prioritizeTask} />;
 export const AIRemindScreen = () => <AIToggleScreen title="Remind me AI" settingKey="aiRemindEnabled" placeholder="List your tasks and deadlines..." action={suggestStudySchedule} />;
+export const AISummaryScreen = () => <AIToggleScreen title="AI note summarization" settingKey="aiSummarizeEnabled" placeholder="Paste notes to summarize..." action={summarizeStudyNotes} />;
 
 export function SettingsSummaryCard() {
   const settings = getSettingsSnapshot();

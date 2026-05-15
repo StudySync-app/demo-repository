@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated, Easing, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated, Easing, Image, Linking } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
@@ -49,7 +49,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       // 2. Call Supabase
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password,
       });
 
@@ -61,6 +61,26 @@ export default function LoginScreen({ navigation }: Props) {
     } catch (err: any) {
       // 4. Failure -> Show custom error
       setError(err.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: "google" | "github" | "facebook") => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { skipBrowserRedirect: true },
+      });
+
+      if (oauthError) throw oauthError;
+      if (!data?.url) throw new Error("Could not start social sign in.");
+
+      await Linking.openURL(data.url);
+    } catch (err: any) {
+      setError(err.message || "Social sign in failed.");
     } finally {
       setLoading(false);
     }
@@ -167,13 +187,13 @@ export default function LoginScreen({ navigation }: Props) {
           {/* 7. SOCIAL LOGIN OPTIONS */}
           <Text style={styles.signInOptionsText}>Sign in options</Text>
           <View style={styles.socialContainer}>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8} onPress={() => handleSocialLogin("google")}>
               <Icon name="google" size={28} color="#DB4437" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8} onPress={() => handleSocialLogin("github")}>
               <Icon name="github" size={28} color="#E5E7EB" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8} onPress={() => handleSocialLogin("facebook")}>
               <Icon name="facebook" size={28} color="#3B82F6" />
             </TouchableOpacity>
           </View>

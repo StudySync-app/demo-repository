@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Animated, Easing } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Modal, Animated, Easing, Linking } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
 // Switch to @expo/vector-icons for consistency
@@ -7,7 +7,7 @@ import { FontAwesome as Icon, MaterialIcons as IconMat } from '@expo/vector-icon
 import { supabase } from "../../lib/supabase";
 
 type RootStackParamList = { 
-  SignUpStep3: { fullName: string; email: string; role: string }; 
+  SignUpStep3: { fullName: string; email: string; role?: string }; 
   MainTabs: undefined;
   Login: undefined;
 };
@@ -16,7 +16,7 @@ type RoutePropType = RouteProp<RootStackParamList, "SignUpStep3">;
 type Props = { navigation: NavigationProp; route: RoutePropType };
 
 export default function SignUpStep3({ navigation, route }: any) {
-  const { fullName, email, role } = route.params;
+  const { fullName, email } = route.params;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,13 +37,16 @@ export default function SignUpStep3({ navigation, route }: any) {
     setLoading(true);
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password: password,
-        options: { data: { full_name: fullName.trim(), role } },
+        options: { data: { full_name: fullName.trim() } },
       });
 
       if (signUpError) throw signUpError;
       if (!data?.user) throw new Error("Sign up failed. Please try again.");
+      if (data.user.identities && data.user.identities.length === 0) {
+        throw new Error("Email already in use. Please sign in.");
+      }
 
       setShowSuccess(true);
       Animated.parallel([
@@ -60,6 +63,25 @@ export default function SignUpStep3({ navigation, route }: any) {
       else if (err.message) msg = err.message;
       setError(msg);
     } finally { setLoading(false); }
+  };
+
+  const handleSocialSignUp = async (provider: "google" | "github" | "facebook") => {
+    setError(null);
+    setLoading(true);
+    try {
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { skipBrowserRedirect: true },
+      });
+
+      if (oauthError) throw oauthError;
+      if (!data?.url) throw new Error("Could not start social sign up.");
+      await Linking.openURL(data.url);
+    } catch (err: any) {
+      setError(err.message || "Social sign up failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSignInNow = () => {
@@ -89,9 +111,9 @@ export default function SignUpStep3({ navigation, route }: any) {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Or sign up with</Text>
           <View style={styles.socialIcons}>
-            <TouchableOpacity style={styles.socialButton}><Icon name="google" size={24} color="#DB4437" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}><Icon name="github" size={24} color="#E5E7EB" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton}><Icon name="facebook" size={24} color="#3B82F6" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("google")}><Icon name="google" size={24} color="#DB4437" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("github")}><Icon name="github" size={24} color="#E5E7EB" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={() => handleSocialSignUp("facebook")}><Icon name="facebook" size={24} color="#3B82F6" /></TouchableOpacity>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
             <Text style={styles.loginLink}>Already have an account? Sign In</Text>

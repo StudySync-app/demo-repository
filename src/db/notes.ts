@@ -1,6 +1,6 @@
 import { db } from "./client";
 import { notes } from "./schema";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, like, or, sql } from "drizzle-orm";
 
 export type Note = {
   id: number;
@@ -20,7 +20,8 @@ export function addNote(
   content: string, 
   audioList: any[], 
   imageList: any[], 
-  videoList: any[]
+  videoList: any[],
+  folderId?: number | null
 ) {
   return db.insert(notes).values({
     title,
@@ -29,13 +30,52 @@ export function addNote(
     audioList: JSON.stringify(audioList || []),
     imageList: JSON.stringify(imageList || []),
     videoList: JSON.stringify(videoList || []),
+    folderId: folderId ?? null,
     synced: false,
     createdAt: new Date().toISOString()
   }).run();
 }
 
 export function getNotes(): Note[] {
-  return db.select().from(notes).all() as Note[];
+  return db.select().from(notes).orderBy(desc(notes.createdAt)).all() as Note[];
+}
+
+export function searchNotes(query: string): Note[] {
+  const term = `%${query.trim()}%`;
+  return db
+    .select()
+    .from(notes)
+    .where(or(like(notes.title, term), like(notes.content, term)))
+    .orderBy(desc(notes.createdAt))
+    .all() as Note[];
+}
+
+export function getNoteById(id: number): Note | undefined {
+  return db.select().from(notes).where(eq(notes.id, id)).get() as Note | undefined;
+}
+
+export function updateNote(
+  id: number,
+  title: string,
+  content: string,
+  audioList: any[],
+  imageList: any[],
+  videoList: any[],
+  folderId?: number | null
+) {
+  return db.update(notes).set({
+    title,
+    content,
+    audioList: JSON.stringify(audioList || []),
+    imageList: JSON.stringify(imageList || []),
+    videoList: JSON.stringify(videoList || []),
+    folderId: folderId ?? null,
+    synced: false,
+  }).where(eq(notes.id, id)).run();
+}
+
+export function updateNoteFolder(id: number, folderId: number | null) {
+  return db.update(notes).set({ folderId, synced: false }).where(eq(notes.id, id)).run();
 }
 
 export function deleteNote(id: number) {

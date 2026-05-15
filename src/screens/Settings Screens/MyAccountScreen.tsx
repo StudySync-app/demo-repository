@@ -57,7 +57,6 @@ export default function MyAccountScreen() {
   };
 
   const fullName = user?.user_metadata?.full_name || "StudySync user";
-  const role = user?.user_metadata?.role || "Student";
   const email = user?.email || "No email loaded";
 
   return (
@@ -77,7 +76,12 @@ export default function MyAccountScreen() {
 
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("PersonalDetails")}>
           <Text style={styles.cardTitle}>Personal details</Text>
-          <Text style={styles.cardSubtitle}>Keep your details current and accurate.</Text>
+          <Text style={styles.cardSubtitle}>{fullName} · {email}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("Address")}>
+          <Text style={styles.cardTitle}>Address</Text>
+          <Text style={styles.cardSubtitle}>Save Home and Work addresses for your profile.</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("Payments")}>

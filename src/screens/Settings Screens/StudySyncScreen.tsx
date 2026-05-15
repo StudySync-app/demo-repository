@@ -9,6 +9,7 @@ const items = [
   { title: "AI suggest", subtitle: "Recommend learning resources.", icon: "tips-and-updates", route: "AISuggest" },
   { title: "AI assist", subtitle: "Prioritize tasks and explain why.", icon: "auto-awesome", route: "AIAssist" },
   { title: "Remind me AI", subtitle: "Suggest a study schedule from tasks.", icon: "alarm", route: "AIRemind" },
+  { title: "AI note summarization", subtitle: "Enable clean summaries inside Notes.", icon: "summarize", route: "AISummary" },
 ];
 
 export default function StudySyncScreen() {

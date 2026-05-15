@@ -12,8 +12,10 @@ import {
   AIAnswerScreen,
   AIAssistScreen,
   AIQuizScreen,
+  AISummaryScreen,
   AIRemindScreen,
   AISuggestScreen,
+  AddressScreen,
   ChangePasswordScreen,
   DisableNotificationsScreen,
   FontSizeScreen,
@@ -45,6 +47,7 @@ export default function SettingsTabs() {
       <Stack.Screen name="Security" component={SecurityScreens} />
       <Stack.Screen name="StudySync" component={StudySyncScreen} />
       <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
+      <Stack.Screen name="Address" component={AddressScreen} />
       <Stack.Screen name="Payments" component={PaymentsScreen} />
       <Stack.Screen name="ThemeMode" component={ThemeModeScreen} />
       <Stack.Screen name="Language" component={LanguageScreen} />
@@ -58,6 +61,7 @@ export default function SettingsTabs() {
       <Stack.Screen name="AISuggest" component={AISuggestScreen} />
       <Stack.Screen name="AIAssist" component={AIAssistScreen} />
       <Stack.Screen name="AIRemind" component={AIRemindScreen} />
+      <Stack.Screen name="AISummary" component={AISummaryScreen} />
     </Stack.Navigator>
   );
 }

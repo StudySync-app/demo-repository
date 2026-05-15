@@ -13,6 +13,8 @@ interface TaskCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onToggleCheck?: () => void;
+  onTagPress?: () => void;
+  tagged?: boolean;
   isCompleted?: boolean;
 }
 
@@ -27,6 +29,8 @@ export const TaskCard = ({
   onEdit,
   onDelete,
   onToggleCheck,
+  onTagPress,
+  tagged = false,
   isCompleted = false
 }: TaskCardProps) => {
   return (
@@ -59,6 +63,11 @@ export const TaskCard = ({
           <TouchableOpacity onPress={onDelete}>
             <MaterialIcons name="delete" size={22} color="#FFF" />
           </TouchableOpacity>
+          {onTagPress ? (
+            <TouchableOpacity onPress={onTagPress}>
+              <MaterialIcons name="bookmark" size={22} color={tagged ? "#60A5FA" : "#FFF"} style={styles.bookmarkIcon} />
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
@@ -117,6 +126,9 @@ const styles = StyleSheet.create({
   },
   iconSpacing: {
     marginRight: 15,
+  },
+  bookmarkIcon: {
+    marginLeft: 15,
   },
   cardFooter: {
     flexDirection: "row",
