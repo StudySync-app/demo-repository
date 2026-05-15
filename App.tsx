@@ -16,6 +16,7 @@ import ResetPasswordScreen from "./src/screens/Auth/ResetPasswordScreen";
 import SignUpStep1 from "./src/screens/Auth/SignUpStep1";
 import SignUpStep2 from "./src/screens/Auth/SignUpStep2";
 import SignUpStep3 from "./src/screens/Auth/SignUpStep3";
+import NoteScreen from "./src/screens/NotesScreen";
 
 export type RootStackParamList = {
   Welcome: undefined;

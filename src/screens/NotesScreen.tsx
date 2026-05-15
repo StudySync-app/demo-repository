@@ -15,6 +15,7 @@ import FormattingToolbarSheet from "../components/FormattingToolbarSheet";
 import NoteRecorderCard from "../components/NoteRecorderCard";
 import { addNote } from "../db/notes";
 
+
 export default function NoteScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
 
