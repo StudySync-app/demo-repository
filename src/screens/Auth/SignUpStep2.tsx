@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated, Image, Dimensions } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RouteProp } from "@react-navigation/native";
-// Use Expo vector icons for better compatibility
 import { MaterialIcons as IconMat, FontAwesome as Icon } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 type RootStackParamList = {
   SignUpStep1: undefined;
@@ -20,10 +21,30 @@ type Props = {
   route: RoutePropType;
 };
 
-export default function SignUpStep2({ navigation, route }: any) {
+export default function SignUpStep2({ navigation, route }: Props) {
   const { fullName, email } = route.params;
   const [selectedRole, setSelectedRole] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  
+  // Animations - Match WelcomeScreen
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideUpAnim = useRef(new Animated.Value(40)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideUpAnim, {
+        toValue: 0,
+        friction: 4,
+        tension: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const roles = [
     { id: "student", label: "I am a student" },
@@ -47,199 +68,348 @@ export default function SignUpStep2({ navigation, route }: any) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <IconMat name="arrow-back" size={24} color="#94A3B8" onPress={() => navigation.goBack()} />
-        <Text style={styles.logoText}>StudySync</Text>
+      {/* Premium Background - Matches WelcomeScreen */}
+      <View style={styles.background}>
+        <View style={styles.glowOrb} />
+        <View style={styles.gridPattern} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.mainTitle}>What describes you best?</Text>
-        <Text style={styles.subtitle}>
-          Choose your role so we can tailor your learning experience and sync progress accordingly.
-        </Text>
-
-        <View style={styles.btnGroup}>
-          {roles.map((role) => (
-            <TouchableOpacity
-              key={role.id}
-              style={[
-                styles.roleBtn,
-                selectedRole === role.id && styles.roleBtnActive,
-              ]}
-              onPress={() => setSelectedRole(role.id)}
-              activeOpacity={0.9}
-            >
-              <Text style={[styles.roleBtnText, selectedRole === role.id && styles.roleBtnTextActive]}>
-                {role.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Animated.View 
           style={[
-            styles.btnPrimary,
-            !selectedRole && styles.btnDisabled,
-            loading && styles.btnLoading,
+            styles.content,
+            { 
+              opacity: fadeAnim,
+              transform: [{ translateY: slideUpAnim }]
+            }
           ]}
-          onPress={handleNext}
-          disabled={!selectedRole || loading}
-          activeOpacity={0.9}
         >
-          {loading ? (
-            <ActivityIndicator color="#0F172A" />
-          ) : (
-            <Text style={styles.btnPrimaryText}>Next Step</Text>
-          )}
-        </TouchableOpacity>
+          {/* Header - Centered Logo */}
+          <View style={styles.header}>
+            <Image 
+              source={require("../../../assets/StudySync_logo1.png")} 
+              style={styles.logoImage} 
+              resizeMode="contain"
+            />
+            <Text style={styles.brandName}>StudySync</Text>
+          </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Or sign up with</Text>
-          <View style={styles.socialIcons}>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-              <Icon name="google" size={28} color="#DB4437" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-              <Icon name="github" size={28} color="#E5E7EB" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
-              <Icon name="facebook" size={28} color="#3B82F6" />
+          {/* Title Section */}
+          <View style={styles.titleSection}>
+            <Text style={styles.mainTitle}>What describes you best?</Text>
+            <Text style={styles.subtitle}>
+              Choose your role so we can tailor your learning experience and sync progress accordingly.
+            </Text>
+          </View>
+
+          {/* Role Selection */}
+          <View style={styles.roleContainer}>
+            {roles.map((role) => (
+              <TouchableOpacity
+                key={role.id}
+                style={[
+                  styles.roleButton,
+                  selectedRole === role.id && styles.roleButtonActive,
+                ]}
+                onPress={() => setSelectedRole(role.id)}
+                activeOpacity={0.9}
+              >
+                <View style={styles.roleContent}>
+                  <View style={[
+                    styles.roleIndicator,
+                    selectedRole === role.id && styles.roleIndicatorActive
+                  ]} />
+                  <Text style={[
+                    styles.roleText,
+                    selectedRole === role.id && styles.roleTextActive
+                  ]}>
+                    {role.label}
+                  </Text>
+                </View>
+                {selectedRole === role.id && (
+                  <IconMat name="check-circle" size={20} color="#60A5FA" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Next Button - Premium Style */}
+          <TouchableOpacity 
+            style={[
+              styles.primaryButton,
+              !selectedRole && styles.primaryButtonDisabled
+            ]}
+            onPress={handleNext}
+            activeOpacity={0.9}
+            disabled={!selectedRole || loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#0A0F1C" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Text style={styles.primaryButtonText}>Next Step</Text>
+                <IconMat name="arrow-forward" size={20} color="#0A0F1C" />
+              </View>
+            )}
+            <View style={styles.buttonShine} />
+          </TouchableOpacity>
+
+          {/* Login Link */}
+          <View style={styles.signUpContainer}>
+            <Text style={styles.signUpText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+              <Text style={styles.signUpLink}>Sign in</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={styles.loginLink}>Already have an account? Sign In</Text>
-          </TouchableOpacity>
-        </View>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or continue with</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social Sign Up */}
+          <View style={styles.socialContainer}>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+              <Icon name="google" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+              <Icon name="github" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}>
+              <Icon name="facebook" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#0F172A", // Dark blue background matching other screens
+  container: {
+    flex: 1,
+    backgroundColor: '#050810', // MATCHES WelcomeScreen
   },
-  header: { 
-    flexDirection: "row", 
-    alignItems: "center", 
+  background: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
+  glowOrb: {
+    position: 'absolute',
+    width: width * 0.7,
+    height: width * 0.7,
+    borderRadius: width * 0.35,
+    backgroundColor: '#3B82F6',
+    opacity: 0.12,
+    top: -150,
+    right: -100,
+  },
+  gridPattern: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    opacity: 0.02,
+    backgroundColor: '#60A5FA',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 28,
+    paddingTop: 90,
+    paddingBottom: 48,
+  },
+  content: {
+    flex: 1,
+  },
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 56,
+    gap: 12,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+  },
+  brandName: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textShadowColor: 'rgba(59, 130, 246, 0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  // Title
+  titleSection: {
     marginBottom: 40,
+    alignItems: 'center',
   },
-  logoText: { 
-    color: "#ffffff", 
-    fontSize: 20, 
-    fontWeight: "600", 
-    marginLeft: 16,
-    letterSpacing: 0.5,
-  },
-  mainTitle: { 
-    color: "#ffffff", 
-    fontSize: 34, 
-    fontWeight: "bold", 
+  mainTitle: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '900',
     lineHeight: 42,
-    marginBottom: 16,
+    letterSpacing: -1,
+    marginBottom: 12,
+    textAlign: 'center',
   },
-  subtitle: { 
-    color: "#94A3B8", 
-    fontSize: 15, 
-    lineHeight: 22, 
-    marginBottom: 36,
+  subtitle: {
+    color: '#94A3B8',
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
-  btnGroup: { 
-    marginBottom: 24, 
+  // Role Selection
+  roleContainer: {
+    marginBottom: 32,
     gap: 14,
   },
-  roleBtn: {
-    width: "100%",
-    height: 52,
-    borderRadius: 26,
-    justifyContent: "center",
-    alignItems: "center",
+  roleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: "#334155",
-    backgroundColor: "#1E293B",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 18,
+    height: 56,
+    shadowColor: '#60A5FA',
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 20,
   },
-  roleBtnActive: {
-    borderColor: "#60A5FA",
-    backgroundColor: "#1e3a8a",
-    shadowColor: "#60A5FA",
-    shadowOffset: { width: 0, height: 4 },
+  roleButtonActive: {
+    borderColor: '#60A5FA',
+    backgroundColor: 'rgba(96, 165, 250, 0.08)',
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  roleBtnText: { 
-    color: "#ffffff", 
-    fontSize: 15, 
-    fontWeight: "500",
+  roleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  roleBtnTextActive: { 
-    color: "#ffffff", 
-    fontWeight: "600",
+  roleIndicator: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  roleIndicatorActive: {
+    borderColor: '#60A5FA',
+    backgroundColor: '#60A5FA',
+  },
+  roleText: {
+    color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '500',
   },
-  btnPrimary: {
-    width: "100%",
-    height: 52,
-    borderRadius: 26,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#60A5FA",
-    marginBottom: 12,
-    shadowColor: "#60A5FA",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+  roleTextActive: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
-  btnPrimaryText: { 
-    color: "#0F172A", 
-    fontSize: 16, 
-    fontWeight: "600",
-  },
-  btnDisabled: { opacity: 0.5 },
-  btnLoading: { opacity: 0.8 },
-  footer: { 
-    alignItems: "center", 
-    marginTop: 32, 
+  // Primary Button
+  primaryButton: {
+    width: '100%',
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#60A5FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    shadowColor: '#60A5FA',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 10,
     marginBottom: 20,
+    position: 'relative',
   },
-  footerText: { 
-    color: "#64748B", 
-    fontSize: 13, 
-    marginBottom: 16,
-    fontWeight: "600",
+  primaryButtonDisabled: {
+    opacity: 0.5,
   },
-  socialIcons: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    marginBottom: 24,
-    gap: 24,
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    zIndex: 2,
+  },
+  primaryButtonText: {
+    color: '#050810',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  buttonShine: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#93C5FD',
+    opacity: 0.3,
+  },
+  signUpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  signUpText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  signUpLink: {
+    color: '#60A5FA',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  // Divider
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 28,
+    gap: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  dividerText: {
+    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  // Social
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
   },
   socialButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#1E293B",
-    justifyContent: "center",
-    alignItems: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderWidth: 1,
-    borderColor: "#334155",
-  },
-  loginLink: { 
-    color: "#60A5FA", 
-    fontSize: 14, 
-    fontWeight: "600", 
-    marginTop: 16,
-  },
-  contentContainer: { 
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
 });
