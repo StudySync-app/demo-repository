@@ -79,11 +79,6 @@ export default function MyAccountScreen() {
           <Text style={styles.cardSubtitle}>{fullName} · {email}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("Address")}>
-          <Text style={styles.cardTitle}>Address</Text>
-          <Text style={styles.cardSubtitle}>Save Home and Work addresses for your profile.</Text>
-        </TouchableOpacity>
-
         <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => navigation.navigate("Payments")}>
           <Text style={styles.cardTitle}>Payments & subscriptions</Text>
           <Text style={styles.cardSubtitle}>Review your current plan, update payment methods, and view invoices.</Text>

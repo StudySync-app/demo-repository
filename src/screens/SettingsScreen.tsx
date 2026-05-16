@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,9 @@ import {
   Image,
   ImageBackground,
   TextInput,
-  Switch,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 import { SPACING } from "../constants/theme";
@@ -37,11 +35,6 @@ type SettingsStackParamList = {
   BackupManager: undefined;
   ImportedFilesManager: undefined;
   CloudSync: undefined;
-  Security: undefined;
-  TwoFactor: undefined;
-  ChangePassword: undefined;
-  RecoveryPhone: undefined;
-  RecoveryEmail: undefined;
   StudySync: undefined;
   AIQuiz: undefined;
   AIAnswer: undefined;
@@ -53,20 +46,11 @@ type SettingsStackParamList = {
 
 type SettingsRouteName = keyof Omit<SettingsStackParamList, "SettingsMain">;
 
-type AISettingKey =
-  | "aiQuiz"
-  | "aiAnswer"
-  | "aiSuggest"
-  | "aiAssist"
-  | "aiRemind"
-  | "aiSummary";
-
 type SettingItem = {
   title: string;
   icon: string;
   parent?: string;
   route?: SettingsRouteName;
-  aiKey?: AISettingKey;
 };
 
 const settingsItems: SettingItem[] = [
@@ -74,16 +58,12 @@ const settingsItems: SettingItem[] = [
   { title: "Personalization", icon: "palette", route: "Personalization" },
   { title: "Notifications", icon: "notifications", route: "Notifications" },
   { title: "Storage & sync", icon: "sync", route: "StorageSync" },
-  { title: "Security", icon: "security", route: "Security" },
   { title: "StudySync AI", icon: "psychology", route: "StudySync" },
 ];
 
 const searchableSettings: SettingItem[] = [
   ...settingsItems,
   { title: "Personal details", icon: "person", route: "PersonalDetails", parent: "My account" },
-  { title: "Address", icon: "home", route: "Address", parent: "My account" },
-  { title: "Home address", icon: "home", route: "Address", parent: "Address" },
-  { title: "Work address", icon: "business", route: "Address", parent: "Address" },
   { title: "Payments & subscriptions", icon: "credit-card", route: "Payments", parent: "My account" },
   { title: "Dark or light mode", icon: "dark-mode", route: "ThemeMode", parent: "Personalization" },
   { title: "Language", icon: "language", route: "Language", parent: "Personalization" },
@@ -96,61 +76,19 @@ const searchableSettings: SettingItem[] = [
   { title: "Manage backups", icon: "backup", route: "BackupManager", parent: "Storage & sync" },
   { title: "Manage imported files", icon: "folder", route: "ImportedFilesManager", parent: "Storage & sync" },
   { title: "Sync files", icon: "cloud-sync", route: "CloudSync", parent: "Storage & sync" },
-  { title: "Two-factor authentication", icon: "verified-user", route: "TwoFactor", parent: "Security" },
-  { title: "Change password", icon: "lock", route: "ChangePassword", parent: "Security" },
-  { title: "Recovery phone", icon: "phone", route: "RecoveryPhone", parent: "Security" },
-  { title: "Recovery email", icon: "email", route: "RecoveryEmail", parent: "Security" },
-  { title: "Generate quiz questions", icon: "quiz", parent: "StudySync AI", aiKey: "aiQuiz" },
-  { title: "Answer any questions", icon: "question-answer", parent: "StudySync AI", aiKey: "aiAnswer" },
-  { title: "AI suggest", icon: "tips-and-updates", parent: "StudySync AI", aiKey: "aiSuggest" },
-  { title: "AI assist", icon: "auto-awesome", parent: "StudySync AI", aiKey: "aiAssist" },
-  { title: "Remind me AI", icon: "alarm", parent: "StudySync AI", aiKey: "aiRemind" },
-  { title: "AI note summarization", icon: "summarize", parent: "StudySync AI", aiKey: "aiSummary" },
+  { title: "Generate quiz questions", icon: "quiz", route: "StudySync", parent: "StudySync AI" },
+  { title: "Answer any questions", icon: "question-answer", route: "StudySync", parent: "StudySync AI" },
+  { title: "AI suggest", icon: "tips-and-updates", route: "StudySync", parent: "StudySync AI" },
+  { title: "AI assist", icon: "auto-awesome", route: "StudySync", parent: "StudySync AI" },
+  { title: "Remind me AI", icon: "alarm", route: "StudySync", parent: "StudySync AI" },
+  { title: "AI note summarization", icon: "summarize", route: "StudySync", parent: "StudySync AI" },
 ];
-
-const DEFAULT_AI_SETTINGS: Record<AISettingKey, boolean> = {
-  aiQuiz: true,
-  aiAnswer: true,
-  aiSuggest: true,
-  aiAssist: true,
-  aiRemind: true,
-  aiSummary: true,
-};
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList, "SettingsMain">>();
   const { isLight, t, textScale } = useAppSettings();
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [aiSettings, setAiSettings] = useState<Record<AISettingKey, boolean>>(DEFAULT_AI_SETTINGS);
-
-  useEffect(() => {
-    const loadAISettings = async () => {
-      try {
-        const saved = await AsyncStorage.getItem("studysync_ai_settings");
-        if (saved) {
-          setAiSettings({
-            ...DEFAULT_AI_SETTINGS,
-            ...JSON.parse(saved),
-          });
-        }
-      } catch {
-        setAiSettings(DEFAULT_AI_SETTINGS);
-      }
-    };
-
-    loadAISettings();
-  }, []);
-
-  const updateAISetting = async (key: AISettingKey, value: boolean) => {
-    const updated = {
-      ...aiSettings,
-      [key]: value,
-    };
-
-    setAiSettings(updated);
-    await AsyncStorage.setItem("studysync_ai_settings", JSON.stringify(updated));
-  };
 
   const filteredItems = useMemo(
     () =>
@@ -164,7 +102,6 @@ export default function SettingsScreen() {
   );
 
   const handlePress = (item: SettingItem) => {
-    if (item.aiKey) return;
     if (item.route) {
       (navigation as any).push(item.route);
     }
@@ -181,10 +118,6 @@ export default function SettingsScreen() {
 
     if (item.title === "Notifications") {
       return require("../../assets/sett_notifications.png");
-    }
-
-    if (item.title === "Security") {
-      return require("../../assets/sett_security.png");
     }
 
     return require("../../assets/sett_ai.png");
@@ -229,14 +162,9 @@ export default function SettingsScreen() {
             style={[styles.settingItem, isLight && styles.lightItem]}
             activeOpacity={0.8}
             onPress={() => handlePress(item)}
-            disabled={!!item.aiKey}
           >
             <View style={styles.settingIcon}>
-              {item.aiKey ? (
-                <MaterialIcons name={item.icon as any} size={22} color={isLight ? "#0F172A" : "#FFFFFF"} />
-              ) : (
-                <Image source={getIconSource(item)} style={styles.iconImage} />
-              )}
+              <Image source={getIconSource(item)} style={styles.iconImage} />
             </View>
 
             <View style={styles.settingTextWrap}>
@@ -249,16 +177,7 @@ export default function SettingsScreen() {
               ) : null}
             </View>
 
-            {item.aiKey ? (
-              <Switch
-                value={aiSettings[item.aiKey]}
-                onValueChange={(value) => updateAISetting(item.aiKey!, value)}
-                trackColor={{ false: "#475569", true: "#4B76E7" }}
-                thumbColor="#FFFFFF"
-              />
-            ) : (
-              <MaterialIcons name="chevron-right" size={22} color={isLight ? "#64748B" : "#A3AED0"} />
-            )}
+            <MaterialIcons name="chevron-right" size={22} color={isLight ? "#64748B" : "#A3AED0"} />
           </TouchableOpacity>
         ))}
 

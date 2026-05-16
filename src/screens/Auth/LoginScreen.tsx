@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Animated, Image, Alert, Linking, Dimensions } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { FontAwesome as Icon, MaterialIcons as IconMat, MaterialCommunityIcons as IconMatCom } from '@expo/vector-icons';
 import { supabase } from "../../lib/supabase";
 
 const { width } = Dimensions.get('window');
+const OAUTH_REDIRECT_URL = "studysync://auth/callback";
 
 type RootStackParamList = { Login: undefined; MainTabs: undefined; SignUpStep1: undefined; ForgotPassword: undefined };
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, "Login">;
@@ -21,12 +22,57 @@ export default function LoginScreen({ navigation }: Props) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideUpAnim = useRef(new Animated.Value(40)).current;
 
+  const getUrlParam = (url: string, key: string) => {
+    const query = url.split("?")[1]?.split("#")[0] || "";
+    const hash = url.split("#")[1] || "";
+    const params = `${query}&${hash}`.split("&");
+    const pair = params.find((part) => part.split("=")[0] === key);
+    return pair ? decodeURIComponent(pair.split("=").slice(1).join("=")) : null;
+  };
+
+  const handleOAuthRedirect = useCallback(async (url: string) => {
+    if (!url.startsWith(OAUTH_REDIRECT_URL)) return;
+
+    const errorDescription = getUrlParam(url, "error_description") || getUrlParam(url, "error");
+    if (errorDescription) {
+      setLoading(false);
+      Alert.alert("Social login error", errorDescription.replace(/\+/g, " "));
+      return;
+    }
+
+    const code = getUrlParam(url, "code");
+    if (!code) return;
+
+    try {
+      setLoading(true);
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      navigation.replace("MainTabs");
+    } catch (err: any) {
+      Alert.alert("Social login error", err.message || "Could not complete social login.");
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation]);
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
       Animated.spring(slideUpAnim, { toValue: 0, friction: 4, tension: 50, useNativeDriver: true }),
     ]).start();
   }, []);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      handleOAuthRedirect(url);
+    });
+
+    Linking.getInitialURL().then((url) => {
+      if (url) handleOAuthRedirect(url);
+    });
+
+    return () => subscription.remove();
+  }, [handleOAuthRedirect]);
 
   const handleLogin = async () => {
     setError(null);
@@ -40,23 +86,27 @@ export default function LoginScreen({ navigation }: Props) {
     } catch (err: any) { setError(err.message || "Invalid email or password."); } finally { setLoading(false); }
   };
 
-  const handleGitHubLogin = async () => {
+  const handleSocialLogin = async (provider: "google" | "github" | "facebook") => {
     try {
       setError(null); setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: 'https://irnvninsapohyjweutse.supabase.co/auth/v1/callback' } });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: OAUTH_REDIRECT_URL,
+          skipBrowserRedirect: true,
+        },
+      });
       if (error) throw error;
       if (data?.url) await Linking.openURL(data.url);
-    } catch (err: any) { Alert.alert('GitHub Login Error', err.message || 'Failed to login with GitHub'); } finally { setLoading(false); }
+    } catch (err: any) {
+      Alert.alert(`${provider[0].toUpperCase()}${provider.slice(1)} Login Error`, err.message || `Failed to login with ${provider}`);
+      setLoading(false);
+    }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setError(null); setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://irnvninsapohyjweutse.supabase.co/auth/v1/callback' } });
-      if (error) throw error;
-      if (data?.url) await Linking.openURL(data.url);
-    } catch (err: any) { Alert.alert('Google Login Error', err.message || 'Failed to login with Google'); } finally { setLoading(false); }
-  };
+  const handleGitHubLogin = () => handleSocialLogin("github");
+  const handleGoogleLogin = () => handleSocialLogin("google");
+  const handleFacebookLogin = () => handleSocialLogin("facebook");
 
   return (
     <View style={styles.container}>
@@ -111,7 +161,7 @@ export default function LoginScreen({ navigation }: Props) {
           <View style={styles.socialContainer}>
             <TouchableOpacity style={styles.socialButton} onPress={handleGoogleLogin} activeOpacity={0.8}><Icon name="google" size={22} color="#FFFFFF" /></TouchableOpacity>
             <TouchableOpacity style={styles.socialButton} onPress={handleGitHubLogin} activeOpacity={0.8}><Icon name="github" size={22} color="#FFFFFF" /></TouchableOpacity>
-            <TouchableOpacity style={styles.socialButton} activeOpacity={0.8}><Icon name="facebook" size={22} color="#FFFFFF" /></TouchableOpacity>
+            <TouchableOpacity style={styles.socialButton} onPress={handleFacebookLogin} activeOpacity={0.8}><Icon name="facebook" size={22} color="#FFFFFF" /></TouchableOpacity>
           </View>
         </Animated.View>
       </ScrollView>
