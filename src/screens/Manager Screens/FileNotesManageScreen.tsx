@@ -15,9 +15,10 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 // Assuming these are your DB/Store helpers for notes
 import { deleteNote, getNotes, searchNotes, updateNoteFolder } from "../../db/notes"; 
-import { getFolders } from "../../db/folders";
+import { addFolder, getFolders } from "../../db/folders";
 import { isContentTagged, toggleContentTag } from "../../db/tags";
 import NoteCard from "../../components/NoteCard"; 
+import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 
 export default function FileNotesManagerScreen() {
   const navigation = useNavigation<any>();
@@ -27,6 +28,7 @@ const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
   const [query, setQuery] = useState("");
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
 
   const loadNotes = async () => {
     setLoading(true);
@@ -99,8 +101,24 @@ const insets = useSafeAreaInsets();
     ]);
   };
 
+  const handleCreateFolder = async (name: string) => {
+    try {
+      await addFolder(name.trim(), "Notes");
+      setFolderSheetVisible(false);
+      navigation.navigate("FolderedNotesManager");
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
 return (
     <View style={styles.container}>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={getFolders()}
+      />
       {/* Header matching Task Manager layout */}
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <View style={styles.headerLeft}>
@@ -127,12 +145,20 @@ return (
 
           {/* Add Note Button */}
           {!showArchived && (
-            <TouchableOpacity 
-              style={styles.actionBtn} 
-              onPress={() => navigation.navigate("NoteScreen")}
-            >
-              <MaterialIcons name="add" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => setFolderSheetVisible(true)}
+              >
+                <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => navigation.navigate("NoteScreen")}
+              >
+                <MaterialIcons name="add" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </>
           )}
         </View>
       </View>

@@ -97,7 +97,7 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
           </View>
 
           <Text style={styles.description}>
-            Organize your tasks by creating a matching folder. Choose a media category to help with filtering.
+            Create an empty folder that is ready to hold tasks, notes, media, audio, or video files.
           </Text>
 
           <View style={styles.categoryRow}>
@@ -122,7 +122,7 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
             onPress={handleCreate}
             activeOpacity={0.8}
           >
-            <Text style={styles.createButtonText}>Create and folder this file</Text>
+            <Text style={styles.createButtonText}>Create folder</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

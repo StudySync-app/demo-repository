@@ -5,12 +5,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { deleteMedia, getMedia, type MediaItem } from "../../db/media";
 import { isContentTagged, toggleContentTag } from "../../db/tags";
+import { addFolder, getFolders } from "../../db/folders";
+import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 
 export default function FileMediaManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "audio">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
 
   const load = useCallback(() => {
     setItems(getMedia());
@@ -56,16 +59,37 @@ export default function FileMediaManagerScreen({ navigation }: any) {
     ]);
   };
 
+  const handleCreateFolder = async (name: string, category: string) => {
+    try {
+      await addFolder(name.trim(), category || "Media");
+      setFolderSheetVisible(false);
+      navigation.navigate("FolderedMediaManager");
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
   return (
     <View style={[
       styles.container, 
       { paddingTop: insets.top, paddingBottom: insets.bottom }
     ]}>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={getFolders()}
+      />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.title}>My Media</Text>
+        </View>
+        <TouchableOpacity style={styles.actionBtn} onPress={() => setFolderSheetVisible(true)}>
+          <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
         </TouchableOpacity>
-        <Text style={styles.title}>My Media</Text>
       </View>
 
       <View style={styles.filterRow}>
@@ -131,8 +155,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050816",
   },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingBottom: 16, gap: 14 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
+  actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 20, marginBottom: 10 },
   chip: { backgroundColor: "#1F2A43", borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
   chipActive: { backgroundColor: "#4B76E7" },
