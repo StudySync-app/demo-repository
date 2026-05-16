@@ -12,6 +12,7 @@ export default function FolderedMediaManagerScreen() {
   const insets = useSafeAreaInsets();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
 
   const refresh = useCallback(() => {
     setFolders(getFolders());
@@ -26,8 +27,7 @@ export default function FolderedMediaManagerScreen() {
         .map((folder) => ({
           folder,
           items: media.filter((item) => item.folderId === folder.id),
-        }))
-        .filter((group) => group.items.length > 0),
+        })),
     [folders, media]
   );
 
@@ -51,39 +51,57 @@ export default function FolderedMediaManagerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
-        {grouped.length === 0 ? (
-          <Text style={styles.emptyText}>No media is inside folders yet. Select or create a folder from the Media import sheet.</Text>
+        {folders.length === 0 ? (
+          <Text style={styles.emptyText}>No media folders yet. Create a folder from the media manager.</Text>
         ) : (
           grouped.map(({ folder, items }) => (
             <View key={folder.id} style={styles.folderBlock}>
-              <Text style={styles.folderName}>{folder.name}</Text>
-              {items.map((item) => (
-                <View key={item.id} style={styles.card}>
-                  {item.type === "image" && item.uri ? <Image source={{ uri: item.uri }} style={styles.thumb} /> : (
-                    <View style={styles.thumbFallback}>
-                      <MaterialIcons name={item.type === "video" ? "movie" : "insert-drive-file"} size={24} color="#58A6FF" />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{item.name || "Media file"}</Text>
-                    <Text style={styles.cardSubtitle}>{item.type || "file"}</Text>
-                  </View>
-                  {item.uri ? (
-                    <TouchableOpacity onPress={() => Linking.openURL(item.uri!)} style={styles.iconButton}>
-                      <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
-                    </TouchableOpacity>
-                  ) : null}
-                  <TouchableOpacity onPress={() => {
-                    updateMediaFolder(item.id, null);
-                    refresh();
-                  }} style={styles.iconButton}>
-                    <MaterialIcons name="folder-off" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.iconButton}>
-                    <MaterialIcons name="delete" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.folderHeader}
+                activeOpacity={0.85}
+                onPress={() => setExpandedFolderId((current) => current === folder.id ? null : folder.id)}
+              >
+                <MaterialIcons name={expandedFolderId === folder.id ? "folder-open" : "folder"} size={26} color="#58A6FF" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.folderName}>{folder.name}</Text>
+                  <Text style={styles.folderCount}>{items.length} file{items.length === 1 ? "" : "s"}</Text>
                 </View>
-              ))}
+                <MaterialIcons name={expandedFolderId === folder.id ? "expand-less" : "expand-more"} size={22} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {expandedFolderId === folder.id ? (
+                items.length === 0 ? (
+                  <Text style={styles.folderEmptyText}>This folder is empty and ready for media.</Text>
+                ) : (
+                  items.map((item) => (
+                    <View key={item.id} style={styles.card}>
+                      {item.type === "image" && item.uri ? <Image source={{ uri: item.uri }} style={styles.thumb} /> : (
+                        <View style={styles.thumbFallback}>
+                          <MaterialIcons name={item.type === "video" ? "movie" : "insert-drive-file"} size={24} color="#58A6FF" />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardTitle}>{item.name || "Media file"}</Text>
+                        <Text style={styles.cardSubtitle}>{item.type || "file"}</Text>
+                      </View>
+                      {item.uri ? (
+                        <TouchableOpacity onPress={() => Linking.openURL(item.uri!)} style={styles.iconButton}>
+                          <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                        </TouchableOpacity>
+                      ) : null}
+                      <TouchableOpacity onPress={() => {
+                        updateMediaFolder(item.id, null);
+                        refresh();
+                      }} style={styles.iconButton}>
+                        <MaterialIcons name="folder-off" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.iconButton}>
+                        <MaterialIcons name="delete" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )
+              ) : null}
             </View>
           ))
         )}
@@ -97,7 +115,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingBottom: 8 },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
-  folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800", marginBottom: 10 },
+  folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
+  folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
+  folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
+  folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
   card: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#111827", borderRadius: 18, padding: 12, marginBottom: 10 },
   thumb: { width: 50, height: 50, borderRadius: 12, backgroundColor: "#1F2A43" },
   thumbFallback: { width: 50, height: 50, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },

@@ -95,7 +95,28 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
               cursorColor="#4B76E7"
             />
           </View>
-          
+
+          <Text style={styles.description}>
+            Create an empty folder that is ready to hold tasks, notes, media, audio, or video files.
+          </Text>
+
+          <View style={styles.categoryRow}>
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[
+                  styles.categoryBtn,
+                  selectedCategory === cat && styles.categoryBtnActive,
+                ]}
+                onPress={() => setSelectedCategory(cat)}
+              >
+                <Text style={[
+                    styles.categoryText,
+                    selectedCategory === cat && styles.categoryTextActive
+                ]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
           <TouchableOpacity 
             style={styles.createButton} 
             onPress={handleCreate}

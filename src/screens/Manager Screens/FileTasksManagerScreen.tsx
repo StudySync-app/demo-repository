@@ -14,7 +14,9 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useTaskStore } from "../../store/useTaskStore"; 
 import { deleteTask, toggleTaskCompleted, type Task } from "../../db/tasks";
 import { isContentTagged, toggleContentTag } from "../../db/tags";
+import { addFolder, getFolders } from "../../db/folders";
 import { TaskCard } from "../../components/TaskCard";
+import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 
 export default function FileTasksManagerScreen() {
   const navigation = useNavigation<any>();
@@ -23,7 +25,8 @@ export default function FileTasksManagerScreen() {
   const { tasks, loadTasks } = useTaskStore();
   // State to track if we are viewing archived (completed) tasks
   const [showArchived, setShowArchived] = useState(false);
-  
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       loadTasks();
@@ -82,8 +85,24 @@ const handleRestore = async (taskId: number) => {
     ]);
   };
 
+  const handleCreateFolder = async (name: string) => {
+    try {
+      await addFolder(name.trim(), "Tasks");
+      setFolderSheetVisible(false);
+      navigation.navigate("FolderedTaskManager");
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={getFolders()}
+      />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <View style={styles.headerLeft}>
@@ -108,12 +127,20 @@ const handleRestore = async (taskId: number) => {
             />
           </TouchableOpacity>
           {!showArchived && (
-            <TouchableOpacity 
-              style={styles.actionBtn} 
-              onPress={() => navigation.navigate("TasksScreen")}
-            >
-              <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => setFolderSheetVisible(true)}
+              >
+                <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => navigation.navigate("TasksScreen")}
+              >
+                <MaterialIcons name="add" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </>
           )}
           
         </View>

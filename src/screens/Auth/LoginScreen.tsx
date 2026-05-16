@@ -43,7 +43,12 @@ export default function LoginScreen({ navigation }: Props) {
   const handleGitHubLogin = async () => {
     try {
       setError(null); setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: 'https://irnvninsapohyjweutse.supabase.co/auth/v1/callback' } });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: 'studysync://oauth-callback',  // ✅ Use app scheme
+        },
+      });
       if (error) throw error;
       if (data?.url) await Linking.openURL(data.url);
     } catch (err: any) { Alert.alert('GitHub Login Error', err.message || 'Failed to login with GitHub'); } finally { setLoading(false); }
@@ -52,10 +57,27 @@ export default function LoginScreen({ navigation }: Props) {
   const handleGoogleLogin = async () => {
     try {
       setError(null); setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: 'https://irnvninsapohyjweutse.supabase.co/auth/v1/callback' } });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'studysync://oauth-callback',  // ✅ Use app scheme
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
       if (error) throw error;
-      if (data?.url) await Linking.openURL(data.url);
-    } catch (err: any) { Alert.alert('Google Login Error', err.message || 'Failed to login with Google'); } finally { setLoading(false); }
+      if (data?.url) {
+        console.log('Opening OAuth URL:', data.url);
+        await Linking.openURL(data.url);
+      } else {
+        throw new Error('No URL returned from Google OAuth');
+      }
+    } catch (err: any) {
+      console.error('Google Login Error:', err);
+      Alert.alert('Google Login Error', err.message || 'Failed to login with Google. Please try again.');
+    } finally { setLoading(false); }
   };
 
   return (

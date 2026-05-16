@@ -12,6 +12,7 @@ export default function FolderedTasksManagerScreen() {
   const insets = useSafeAreaInsets();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
 
   const refresh = useCallback(() => {
     setFolders(getFolders());
@@ -26,8 +27,7 @@ export default function FolderedTasksManagerScreen() {
         .map((folder) => ({
           folder,
           items: tasks.filter((task) => task.folderId === folder.id),
-        }))
-        .filter((group) => group.items.length > 0),
+        })),
     [folders, tasks]
   );
 
@@ -63,29 +63,47 @@ export default function FolderedTasksManagerScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
-        {grouped.length === 0 ? (
-          <Text style={styles.emptyText}>No to-dos are inside folders yet. Create or select a folder from the to-do screen.</Text>
+        {folders.length === 0 ? (
+          <Text style={styles.emptyText}>No to-do folders yet. Create a folder from the task manager.</Text>
         ) : (
           grouped.map(({ folder, items }) => (
             <View key={folder.id} style={styles.folderBlock}>
-              <Text style={styles.folderName}>{folder.name}</Text>
-              {items.map((task) => (
-                <View key={task.id} style={styles.card}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{task.title}</Text>
-                    <Text style={styles.cardSubtitle}>{task.description || "No description"}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => navigation.navigate("TasksScreen", { task })} style={styles.iconButton}>
-                    <MaterialIcons name="edit" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => removeFromFolder(task)} style={styles.iconButton}>
-                    <MaterialIcons name="folder-off" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => confirmDelete(task)} style={styles.iconButton}>
-                    <MaterialIcons name="delete" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.folderHeader}
+                activeOpacity={0.85}
+                onPress={() => setExpandedFolderId((current) => current === folder.id ? null : folder.id)}
+              >
+                <MaterialIcons name={expandedFolderId === folder.id ? "folder-open" : "folder"} size={26} color="#58A6FF" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.folderName}>{folder.name}</Text>
+                  <Text style={styles.folderCount}>{items.length} task{items.length === 1 ? "" : "s"}</Text>
                 </View>
-              ))}
+                <MaterialIcons name={expandedFolderId === folder.id ? "expand-less" : "expand-more"} size={22} color="#94A3B8" />
+              </TouchableOpacity>
+
+              {expandedFolderId === folder.id ? (
+                items.length === 0 ? (
+                  <Text style={styles.folderEmptyText}>This folder is empty and ready for tasks.</Text>
+                ) : (
+                  items.map((task) => (
+                    <View key={task.id} style={styles.card}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardTitle}>{task.title}</Text>
+                        <Text style={styles.cardSubtitle}>{task.description || "No description"}</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => navigation.navigate("TasksScreen", { task })} style={styles.iconButton}>
+                        <MaterialIcons name="edit" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => removeFromFolder(task)} style={styles.iconButton}>
+                        <MaterialIcons name="folder-off" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => confirmDelete(task)} style={styles.iconButton}>
+                        <MaterialIcons name="delete" size={20} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                  ))
+                )
+              ) : null}
             </View>
           ))
         )}
@@ -99,7 +117,10 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingBottom: 8 },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
-  folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800", marginBottom: 10 },
+  folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
+  folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
+  folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
+  folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
   card: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   cardTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   cardSubtitle: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
