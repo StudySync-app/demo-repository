@@ -7,10 +7,12 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { addFolder, getFolders, type Folder } from "../../db/folders";
 import { deleteMedia, getMedia, updateMediaFolder, type MediaItem } from "../../db/media";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 
 export default function FolderedMediaManagerScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { isLight, textScale } = useAppSettings();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
@@ -75,7 +77,7 @@ export default function FolderedMediaManagerScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, isLight && styles.lightContainer, { paddingTop: insets.top + 12 }]}>
       <CreateFolderSheet
         isVisible={folderSheetVisible}
         onClose={() => setFolderSheetVisible(false)}
@@ -85,9 +87,9 @@ export default function FolderedMediaManagerScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={isLight ? "#0F172A" : "#FFFFFF"} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Foldered media</Text>
+          <Text style={[styles.headerTitle, isLight && styles.lightTitle, { fontSize: 24 * textScale }]}>Foldered media</Text>
         </View>
         <TouchableOpacity style={styles.headerButton} onPress={() => setFolderSheetVisible(true)}>
           <MaterialIcons name="create-new-folder" size={24} color="#FFFFFF" />
@@ -96,19 +98,19 @@ export default function FolderedMediaManagerScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
         {folders.length === 0 ? (
-          <Text style={styles.emptyText}>No media folders yet. Create a folder from the media manager.</Text>
+          <Text style={[styles.emptyText, isLight && styles.lightSubtitle]}>No media folders yet. Create a folder from the media manager.</Text>
         ) : (
           grouped.map(({ folder, items }) => (
             <View key={folder.id} style={styles.folderBlock}>
               <TouchableOpacity
-                style={styles.folderHeader}
+                style={[styles.folderHeader, isLight && styles.lightCard]}
                 activeOpacity={0.85}
                 onPress={() => setExpandedFolderId((current) => current === folder.id ? null : folder.id)}
               >
                 <MaterialIcons name={expandedFolderId === folder.id ? "folder-open" : "folder"} size={26} color="#58A6FF" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.folderName}>{folder.name}</Text>
-                  <Text style={styles.folderCount}>{items.length} file{items.length === 1 ? "" : "s"}</Text>
+                  <Text style={[styles.folderName, isLight && styles.lightTitle]}>{folder.name}</Text>
+                  <Text style={[styles.folderCount, isLight && styles.lightSubtitle]}>{items.length} file{items.length === 1 ? "" : "s"}</Text>
                 </View>
                 <TouchableOpacity style={styles.folderActionButton} onPress={() => handleAddMedia(folder)}>
                   <MaterialIcons name="add" size={20} color="#FFFFFF" />
@@ -118,18 +120,18 @@ export default function FolderedMediaManagerScreen() {
 
               {expandedFolderId === folder.id ? (
                 items.length === 0 ? (
-                  <Text style={styles.folderEmptyText}>This folder is empty and ready for media.</Text>
+                  <Text style={[styles.folderEmptyText, isLight && styles.lightEmptyText]}>This folder is empty and ready for media.</Text>
                 ) : (
                   items.map((item) => (
-                    <View key={item.id} style={styles.card}>
+                    <View key={item.id} style={[styles.card, isLight && styles.lightCard]}>
                       {item.type === "image" && item.uri ? <Image source={{ uri: item.uri }} style={styles.thumb} /> : (
                         <View style={styles.thumbFallback}>
                           <MaterialIcons name={item.type === "video" ? "movie" : "insert-drive-file"} size={24} color="#58A6FF" />
                         </View>
                       )}
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.cardTitle}>{item.name || "Media file"}</Text>
-                        <Text style={styles.cardSubtitle}>{item.type || "file"}</Text>
+                        <Text style={[styles.cardTitle, isLight && styles.lightTitle]}>{item.name || "Media file"}</Text>
+                        <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle]}>{item.type || "file"}</Text>
                       </View>
                       {item.uri ? (
                         <TouchableOpacity onPress={() => Linking.openURL(item.uri!)} style={styles.iconButton}>
@@ -159,16 +161,19 @@ export default function FolderedMediaManagerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050816" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 8 },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
   folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
   folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
   folderActionButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#4B76E7", alignItems: "center", justifyContent: "center" },
   folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
+  lightEmptyText: { color: "#64748B", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   card: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#111827", borderRadius: 18, padding: 12, marginBottom: 10 },
   thumb: { width: 50, height: 50, borderRadius: 12, backgroundColor: "#1F2A43" },
   thumbFallback: { width: 50, height: 50, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
@@ -176,4 +181,6 @@ const styles = StyleSheet.create({
   cardSubtitle: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   iconButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   emptyText: { color: "#94A3B8", textAlign: "center", marginTop: 80, lineHeight: 22 },
+  lightTitle: { color: "#0F172A" },
+  lightSubtitle: { color: "#64748B" },
 });

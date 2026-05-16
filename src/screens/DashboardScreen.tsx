@@ -219,16 +219,6 @@ export default function DashboardScreen() {
           <Text style={[styles.brandLetter, isLight && styles.lightText, { fontSize: 22 * textScale }]}>StudySync</Text>
         </View>
 
-        <TouchableOpacity style={[styles.searchBtn, isLight && styles.lightCard]}>
-        <Image
-          source={require("../../assets/search.png")}
-          style={{
-            width: 24,
-            height: 24,
-            resizeMode: "contain",
-          }}
-        />
-        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>

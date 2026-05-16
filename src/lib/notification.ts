@@ -22,7 +22,6 @@ export function configureNotifications() {
     Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: "StudySync reminders",
       importance: Notifications.AndroidImportance.HIGH,
-      sound: "default",
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#4B76E7",
       lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -48,7 +47,7 @@ function content(title: string, body: string, soundEnabled = true): Notification
   return {
     title,
     body,
-    sound: soundEnabled ? "default" : undefined,
+    sound: soundEnabled,
   };
 }
 

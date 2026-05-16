@@ -106,16 +106,17 @@ function applyGlobalTextSettings(settings: AppSettings) {
     ? {
         fontFamily: Platform.select({ android: "sans-serif", ios: "Avenir", default: undefined }),
         lineHeight: 22 * fontScale,
+        letterSpacing: 0.3,
       }
     : {};
 
   const AppText = Text as any;
   AppText.defaultProps = AppText.defaultProps || {};
-  AppText.defaultProps.style = [{ fontSize: 14 * fontScale }, dyslexiaStyle, AppText.defaultProps.style];
+  AppText.defaultProps.style = [{ fontSize: 14 * fontScale }, dyslexiaStyle];
 
   const AppTextInput = TextInput as any;
   AppTextInput.defaultProps = AppTextInput.defaultProps || {};
-  AppTextInput.defaultProps.style = [{ fontSize: 16 * fontScale }, dyslexiaStyle, AppTextInput.defaultProps.style];
+  AppTextInput.defaultProps.style = [{ fontSize: 16 * fontScale }, dyslexiaStyle];
 }
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {

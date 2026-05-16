@@ -17,10 +17,12 @@ import { isContentTagged, toggleContentTag } from "../../db/tags";
 import { addFolder, getFolders } from "../../db/folders";
 import { TaskCard } from "../../components/TaskCard";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 
 export default function FileTasksManagerScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { isLight, textScale } = useAppSettings();
   
   const { tasks, loadTasks } = useTaskStore();
   // State to track if we are viewing archived (completed) tasks
@@ -96,7 +98,7 @@ const handleRestore = async (taskId: number) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLight && styles.lightContainer]}>
       <CreateFolderSheet
         isVisible={folderSheetVisible}
         onClose={() => setFolderSheetVisible(false)}
@@ -107,9 +109,9 @@ const handleRestore = async (taskId: number) => {
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+            <MaterialIcons name="arrow-back" size={28} color={isLight ? "#0F172A" : "#FFF"} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, isLight && styles.lightText, { fontSize: 24 * textScale }]}>
             {showArchived ? "Archived Tasks" : "My to do's"}
           </Text>
         </View>
@@ -152,16 +154,16 @@ const handleRestore = async (taskId: number) => {
               <MaterialIcons 
                 name={showArchived ? "archive" : "assignment-turned-in"} 
                 size={48} 
-                color="#1F2A43" 
+                color={isLight ? "#CBD5E1" : "#1F2A43"} 
               />
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, isLight && styles.lightMuted]}>
                 {showArchived ? "No completed tasks yet." : "All caught up!"}
               </Text>
             </View>
           ) : (
             groupedTasks.map((group) => (
               <View key={group.key}>
-                {!showArchived && <Text style={styles.groupTitle}>{group.label}</Text>}
+                {!showArchived && <Text style={[styles.groupTitle, isLight && styles.lightText]}>{group.label}</Text>}
                 {group.items.map((task: Task) => {
                   const priorityInfo = getPriorityInfo(task.priority || "");
                   return (
@@ -199,6 +201,7 @@ const handleRestore = async (taskId: number) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050816" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -208,6 +211,8 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: "row", alignItems: "center" },
   headerTitle: { color: "#FFF", fontSize: 24, fontWeight: "700", marginLeft: 15 },
+  lightText: { color: "#0F172A" },
+  lightMuted: { color: "#64748B" },
   headerActions: { flexDirection: "row", gap: 10 },
   actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   activeActionBtn: { backgroundColor: "#4B76E7" }, // Highlight when viewing archive

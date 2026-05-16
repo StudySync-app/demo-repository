@@ -346,6 +346,24 @@ export default function NoteScreen({ navigation }: any) {
     ]);
   };
 
+  const removeAudio = (id: string) => {
+    const next = audioList.filter((item) => item.id !== id);
+    setAudioList(next);
+    updateHistory(title, content, next);
+  };
+
+  const removeImage = (idOrUri: string) => {
+    setImageList((current) => current.filter((item) => (item.id || item.uri) !== idOrUri));
+  };
+
+  const removeVideo = (idOrUri: string) => {
+    setVideoList((current) => current.filter((item) => (item.id || item.uri) !== idOrUri));
+  };
+
+  const removePdf = (idOrUri: string) => {
+    setPdfList((current) => current.filter((item) => (item.id || item.uri) !== idOrUri));
+  };
+
   const handleSummarize = async () => {
     setShowAIMenu(false);
     if (!getSetting("aiSummarizeEnabled", false)) {
@@ -513,33 +531,62 @@ export default function NoteScreen({ navigation }: any) {
           )}
 
           {audioList.map((audio) => (
-            <NoteRecorderCard 
-              key={audio.id}
-              uri={audio.uri}
-              isCompleted={true}
-              onStopRecording={() => {}} 
-            />
+            <View key={audio.id} style={styles.attachmentItem}>
+              <View style={{ flex: 1 }}>
+                <NoteRecorderCard
+                  uri={audio.uri}
+                  isCompleted={true}
+                  onStopRecording={() => {}}
+                />
+              </View>
+              {canEdit ? (
+                <TouchableOpacity style={styles.attachmentDelete} onPress={() => removeAudio(audio.id)}>
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           ))}
 
           {imageList.map((image) => (
-            <Image key={image.id || image.uri} source={{ uri: image.uri }} style={styles.imageAttachment} />
+            <View key={image.id || image.uri} style={styles.attachmentItem}>
+              <Image source={{ uri: image.uri }} style={styles.imageAttachment} />
+              {canEdit ? (
+                <TouchableOpacity style={styles.attachmentDelete} onPress={() => removeImage(image.id || image.uri)}>
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           ))}
 
           {videoList.map((video) => (
-            <TouchableOpacity key={video.id || video.uri} style={styles.fileAttachment} onPress={() => Linking.openURL(video.uri)}>
-              <Ionicons name="play-circle-outline" size={28} color="#fff" />
-              <Text style={styles.fileAttachmentText} numberOfLines={1}>{video.name || "Attached video"}</Text>
-            </TouchableOpacity>
+            <View key={video.id || video.uri} style={styles.attachmentItem}>
+              <TouchableOpacity style={styles.fileAttachment} onPress={() => Linking.openURL(video.uri)}>
+                <Ionicons name="play-circle-outline" size={28} color="#fff" />
+                <Text style={styles.fileAttachmentText} numberOfLines={1}>{video.name || "Attached video"}</Text>
+              </TouchableOpacity>
+              {canEdit ? (
+                <TouchableOpacity style={styles.attachmentDelete} onPress={() => removeVideo(video.id || video.uri)}>
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           ))}
 
           {pdfList.map((pdf) => (
-            <TouchableOpacity key={pdf.id || pdf.uri} style={styles.fileAttachment} onPress={() => Linking.openURL(pdf.uri)}>
-              <Ionicons name="document-text-outline" size={26} color="#fff" />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fileAttachmentText} numberOfLines={1}>{pdf.name || "PDF"}</Text>
-                {pdf.createdAt ? <Text style={styles.fileAttachmentMeta}>{pdf.createdAt}</Text> : null}
-              </View>
-            </TouchableOpacity>
+            <View key={pdf.id || pdf.uri} style={styles.attachmentItem}>
+              <TouchableOpacity style={styles.fileAttachment} onPress={() => Linking.openURL(pdf.uri)}>
+                <Ionicons name="document-text-outline" size={26} color="#fff" />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fileAttachmentText} numberOfLines={1}>{pdf.name || "PDF"}</Text>
+                  {pdf.createdAt ? <Text style={styles.fileAttachmentMeta}>{pdf.createdAt}</Text> : null}
+                </View>
+              </TouchableOpacity>
+              {canEdit ? (
+                <TouchableOpacity style={styles.attachmentDelete} onPress={() => removePdf(pdf.id || pdf.uri)}>
+                  <Ionicons name="trash-outline" size={20} color="#fff" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
           ))}
         </View>
 
@@ -661,8 +708,10 @@ const styles = StyleSheet.create({
   noteInput: { color: "#d4d4d8", lineHeight: 26, flex: 1, minHeight: 200 },
   readingText: { fontSize: 17 },
   attachmentWrapper: { width: '100%', marginBottom: 15 },
-  imageAttachment: { width: "100%", height: 180, borderRadius: 16, marginBottom: 10, backgroundColor: "#1c1c1e" },
-  fileAttachment: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1c1c1e", borderRadius: 16, padding: 14, marginBottom: 10 },
+  attachmentItem: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 },
+  attachmentDelete: { width: 40, height: 40, borderRadius: 14, backgroundColor: "#DC2626", alignItems: "center", justifyContent: "center" },
+  imageAttachment: { flex: 1, width: "100%", height: 180, borderRadius: 16, backgroundColor: "#1c1c1e" },
+  fileAttachment: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1c1c1e", borderRadius: 16, padding: 14 },
   fileAttachmentText: { color: "#ffffff", flex: 1, fontWeight: "600" },
   fileAttachmentMeta: { color: "#71717a", fontSize: 11, marginTop: 2 },
 });

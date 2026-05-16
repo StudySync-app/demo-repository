@@ -19,10 +19,12 @@ import { addFolder, getFolders } from "../../db/folders";
 import { isContentTagged, toggleContentTag } from "../../db/tags";
 import NoteCard from "../../components/NoteCard"; 
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 
 export default function FileNotesManagerScreen() {
   const navigation = useNavigation<any>();
 const insets = useSafeAreaInsets();
+  const { isLight, textScale } = useAppSettings();
   
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -112,7 +114,7 @@ const insets = useSafeAreaInsets();
   };
 
 return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLight && styles.lightContainer]}>
       <CreateFolderSheet
         isVisible={folderSheetVisible}
         onClose={() => setFolderSheetVisible(false)}
@@ -123,9 +125,9 @@ return (
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+            <MaterialIcons name="arrow-back" size={28} color={isLight ? "#0F172A" : "#FFF"} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, isLight && styles.lightText, { fontSize: 24 * textScale }]}>
             {showArchived ? "Archived Notes" : "My Notes"}
           </Text>
         </View>
@@ -188,9 +190,9 @@ return (
               <MaterialIcons 
                 name={showArchived ? "archive" : "description"} 
                 size={48} 
-                color="#1F2A43" 
+                color={isLight ? "#CBD5E1" : "#1F2A43"} 
               />
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, isLight && styles.lightMuted]}>
                 {showArchived ? "No archived notes yet." : "No notes found in this folder."}
               </Text>
             </View>
@@ -225,7 +227,8 @@ return (
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#050816" }, // Preserving your deep navy background
+  container: { flex: 1, backgroundColor: "#050816" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -235,6 +238,8 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: "row", alignItems: "center" },
   headerTitle: { color: "#FFF", fontSize: 24, fontWeight: "700", marginLeft: 15 },
+  lightText: { color: "#0F172A" },
+  lightMuted: { color: "#64748B" },
   headerActions: { flexDirection: "row", gap: 10 },
   actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   activeActionBtn: { backgroundColor: "#4B76E7" },

@@ -7,10 +7,12 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { addFolder, getFolders, type Folder } from "../../db/folders";
 import { deleteNote, getNotes, updateNoteFolder, type Note } from "../../db/notes";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 
 export default function FolderedNotesManagerScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
+  const { isLight, textScale } = useAppSettings();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
@@ -79,7 +81,7 @@ export default function FolderedNotesManagerScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, isLight && styles.lightContainer, { paddingTop: insets.top + 12 }]}>
       <CreateFolderSheet
         isVisible={folderSheetVisible}
         onClose={() => setFolderSheetVisible(false)}
@@ -89,9 +91,9 @@ export default function FolderedNotesManagerScreen() {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color={isLight ? "#0F172A" : "#FFFFFF"} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Foldered notes</Text>
+          <Text style={[styles.headerTitle, isLight && styles.lightTitle, { fontSize: 24 * textScale }]}>Foldered notes</Text>
         </View>
         <TouchableOpacity style={styles.headerButton} onPress={() => setFolderSheetVisible(true)}>
           <MaterialIcons name="create-new-folder" size={24} color="#FFFFFF" />
@@ -100,19 +102,19 @@ export default function FolderedNotesManagerScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
         {folders.length === 0 ? (
-          <Text style={styles.emptyText}>No note folders yet. Create a folder from the notes manager.</Text>
+          <Text style={[styles.emptyText, isLight && styles.lightSubtitle]}>No note folders yet. Create a folder from the notes manager.</Text>
         ) : (
           grouped.map(({ folder, items }) => (
             <View key={folder.id} style={styles.folderBlock}>
               <TouchableOpacity
-                style={styles.folderHeader}
+                style={[styles.folderHeader, isLight && styles.lightCard]}
                 activeOpacity={0.85}
                 onPress={() => setExpandedFolderId((current) => current === folder.id ? null : folder.id)}
               >
                 <MaterialIcons name={expandedFolderId === folder.id ? "folder-open" : "folder"} size={26} color="#58A6FF" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.folderName}>{folder.name}</Text>
-                  <Text style={styles.folderCount}>{items.length} note{items.length === 1 ? "" : "s"}</Text>
+                  <Text style={[styles.folderName, isLight && styles.lightTitle]}>{folder.name}</Text>
+                  <Text style={[styles.folderCount, isLight && styles.lightSubtitle]}>{items.length} note{items.length === 1 ? "" : "s"}</Text>
                 </View>
                 <TouchableOpacity style={styles.folderActionButton} onPress={() => handleAddNote(folder)}>
                   <MaterialIcons name="add" size={20} color="#FFFFFF" />
@@ -122,13 +124,13 @@ export default function FolderedNotesManagerScreen() {
 
               {expandedFolderId === folder.id ? (
                 items.length === 0 ? (
-                  <Text style={styles.folderEmptyText}>This folder is empty and ready for notes.</Text>
+                  <Text style={[styles.folderEmptyText, isLight && styles.lightEmptyText]}>This folder is empty and ready for notes.</Text>
                 ) : (
                   items.map((note) => (
-                    <View key={note.id} style={styles.card}>
+                    <View key={note.id} style={[styles.card, isLight && styles.lightCard]}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.cardTitle}>{note.title || "Untitled note"}</Text>
-                        <Text style={styles.cardSubtitle} numberOfLines={2}>{note.content || "No content"}</Text>
+                        <Text style={[styles.cardTitle, isLight && styles.lightTitle]}>{note.title || "Untitled note"}</Text>
+                        <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle]} numberOfLines={2}>{note.content || "No content"}</Text>
                       </View>
                       <TouchableOpacity onPress={() => navigation.navigate("NoteScreen", { noteId: note.id })} style={styles.iconButton}>
                         <MaterialIcons name="visibility" size={20} color="#FFFFFF" />
@@ -156,19 +158,24 @@ export default function FolderedNotesManagerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050816" },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 8 },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
   folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
   folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
   folderActionButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#4B76E7", alignItems: "center", justifyContent: "center" },
   folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
+  lightEmptyText: { color: "#64748B", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   card: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   cardTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   cardSubtitle: { color: "#94A3B8", fontSize: 12, marginTop: 4 },
   iconButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   emptyText: { color: "#94A3B8", textAlign: "center", marginTop: 80, lineHeight: 22 },
+  lightTitle: { color: "#0F172A" },
+  lightSubtitle: { color: "#64748B" },
 });

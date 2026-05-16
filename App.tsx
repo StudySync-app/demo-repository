@@ -17,6 +17,7 @@ import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
 // ✅ Import your main app tabs (adjust path if needed)
 import MainTabs from "./src/navigation/MainTabs";
 import { configureNotifications } from "./src/lib/notification";
+import { AppSettingsProvider } from "./src/settings/AppSettingsContext";
 
 // ✅ Navigation Types
 export type RootStackParamList = {
@@ -48,26 +49,28 @@ export default function App() {
 
   // ✅ Show Main Navigation After Splash
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Welcome"
-          screenOptions={{
-            headerShown: false,
-            animation: "slide_from_right",
-          }}
-        >
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
-          <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
-          <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
-          <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </SafeAreaProvider>
+    <AppSettingsProvider>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Welcome"
+            screenOptions={{
+              headerShown: false,
+              animation: "slide_from_right",
+            }}
+          >
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="SignUpStep1" component={SignUpStep1} />
+            <Stack.Screen name="SignUpStep2" component={SignUpStep2} />
+            <Stack.Screen name="SignUpStep3" component={SignUpStep3} />
+            <Stack.Screen name="VerifyCode" component={VerifyCodeScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="MainTabs" component={MainTabs} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </AppSettingsProvider>
   );
 }

@@ -7,9 +7,11 @@ import { deleteMedia, getMedia, type MediaItem } from "../../db/media";
 import { isContentTagged, toggleContentTag } from "../../db/tags";
 import { addFolder, getFolders } from "../../db/folders";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
+import { useAppSettings } from "../../settings/AppSettingsContext";
 
 export default function FileMediaManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { isLight, textScale } = useAppSettings();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "audio">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
@@ -71,7 +73,8 @@ export default function FileMediaManagerScreen({ navigation }: any) {
 
   return (
     <View style={[
-      styles.container, 
+      styles.container,
+      isLight && styles.lightContainer,
       { paddingTop: insets.top, paddingBottom: insets.bottom }
     ]}>
       <CreateFolderSheet
@@ -83,9 +86,9 @@ export default function FileMediaManagerScreen({ navigation }: any) {
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <MaterialIcons name="arrow-back" size={28} color="#FFF" />
+            <MaterialIcons name="arrow-back" size={28} color={isLight ? "#0F172A" : "#FFF"} />
           </TouchableOpacity>
-          <Text style={styles.title}>My Media</Text>
+          <Text style={[styles.title, isLight && styles.lightText, { fontSize: 24 * textScale }]}>My Media</Text>
         </View>
         <TouchableOpacity style={styles.actionBtn} onPress={() => setFolderSheetVisible(true)}>
           <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
@@ -113,11 +116,11 @@ export default function FileMediaManagerScreen({ navigation }: any) {
         {displayed.length === 0 ? (
           <View style={styles.empty}>
             <MaterialIcons name="perm-media" size={48} color="#1F2A43" />
-            <Text style={styles.emptyText}>No media files found.</Text>
+            <Text style={[styles.emptyText, isLight && styles.lightMuted]}>No media files found.</Text>
           </View>
         ) : (
           displayed.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.card} onPress={() => openMedia(item)}>
+            <TouchableOpacity key={item.id} style={[styles.card, isLight && styles.lightCard]} onPress={() => openMedia(item)}>
               {item.type === "image" && item.uri ? (
                 <Image source={{ uri: item.uri }} style={styles.thumbnail} />
               ) : (
@@ -130,7 +133,7 @@ export default function FileMediaManagerScreen({ navigation }: any) {
                 </View>
               )}
               <View style={styles.cardBody}>
-                <Text style={styles.name} numberOfLines={1}>{item.name || "Untitled media"}</Text>
+                <Text style={[styles.name, isLight && styles.lightText]} numberOfLines={1}>{item.name || "Untitled media"}</Text>
                 <Text style={styles.meta}>{item.type || "file"} · {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "No date"}</Text>
               </View>
               <TouchableOpacity onPress={() => removeMedia(item)} hitSlop={10}>
@@ -155,9 +158,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#050816",
   },
+  lightContainer: { backgroundColor: "#F4F7FB" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 16 },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
   title: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
+  lightText: { color: "#0F172A" },
+  lightMuted: { color: "#64748B" },
   actionBtn: { backgroundColor: "#1F2A43", padding: 8, borderRadius: 8 },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 20, marginBottom: 10 },
   chip: { backgroundColor: "#1F2A43", borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
@@ -168,6 +174,7 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", marginTop: 80 },
   emptyText: { color: "#94A3B8", marginTop: 12, fontSize: 16 },
   card: { backgroundColor: "#111827", borderRadius: 18, padding: 12, flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 12 },
+  lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
   thumbnail: { width: 58, height: 58, borderRadius: 14, backgroundColor: "#1F2A43", justifyContent: "center", alignItems: "center" },
   cardBody: { flex: 1 },
   name: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
