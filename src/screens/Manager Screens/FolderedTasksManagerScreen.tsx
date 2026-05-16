@@ -4,8 +4,9 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-import { getFolders, type Folder } from "../../db/folders";
+import { addFolder, getFolders, type Folder } from "../../db/folders";
 import { deleteTask, getTasks, updateTaskFull, type Task } from "../../db/tasks";
+import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 
 export default function FolderedTasksManagerScreen() {
   const navigation = useNavigation<any>();
@@ -13,6 +14,7 @@ export default function FolderedTasksManagerScreen() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
 
   const refresh = useCallback(() => {
     setFolders(getFolders());
@@ -43,6 +45,46 @@ export default function FolderedTasksManagerScreen() {
     refresh();
   };
 
+  const moveToFolder = (task: Task, folderId: number) => {
+    updateTaskFull(task.id, {
+      title: task.title,
+      priority: task.priority || "important",
+      dueDate: task.dueDate || new Date().toISOString(),
+      description: task.description || null,
+      status: task.status || "todo",
+      folderId,
+    });
+    setExpandedFolderId(folderId);
+    refresh();
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    try {
+      const folderId = await addFolder(name.trim(), "Tasks");
+      setExpandedFolderId(folderId);
+      setFolderSheetVisible(false);
+      refresh();
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
+  const handleAddTask = (folder: Folder) => {
+    const availableTasks = tasks.filter((task) => task.folderId !== folder.id);
+    if (availableTasks.length === 0) {
+      Alert.alert("No tasks available", "All tasks are already inside this folder.");
+      return;
+    }
+
+    Alert.alert("Add task to folder", folder.name, [
+      ...availableTasks.slice(0, 8).map((task) => ({
+        text: task.title || "Untitled task",
+        onPress: () => moveToFolder(task, folder.id),
+      })),
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   const confirmDelete = (task: Task) => {
     Alert.alert("Delete task", `Remove "${task.title}"?`, [
       { text: "Cancel", style: "cancel" },
@@ -55,11 +97,22 @@ export default function FolderedTasksManagerScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={folders}
+      />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Foldered to-dos</Text>
+        </View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => setFolderSheetVisible(true)}>
+          <MaterialIcons name="create-new-folder" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Foldered to-dos</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
@@ -78,6 +131,9 @@ export default function FolderedTasksManagerScreen() {
                   <Text style={styles.folderName}>{folder.name}</Text>
                   <Text style={styles.folderCount}>{items.length} task{items.length === 1 ? "" : "s"}</Text>
                 </View>
+                <TouchableOpacity style={styles.folderActionButton} onPress={() => handleAddTask(folder)}>
+                  <MaterialIcons name="add" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
                 <MaterialIcons name={expandedFolderId === folder.id ? "expand-less" : "expand-more"} size={22} color="#94A3B8" />
               </TouchableOpacity>
 
@@ -114,12 +170,15 @@ export default function FolderedTasksManagerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050816" },
-  header: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingBottom: 8 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 8 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
   folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
   folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
+  folderActionButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#4B76E7", alignItems: "center", justifyContent: "center" },
   folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
   card: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   cardTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },

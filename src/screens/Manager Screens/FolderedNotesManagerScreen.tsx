@@ -4,8 +4,9 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-import { getFolders, type Folder } from "../../db/folders";
+import { addFolder, getFolders, type Folder } from "../../db/folders";
 import { deleteNote, getNotes, updateNoteFolder, type Note } from "../../db/notes";
+import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 
 export default function FolderedNotesManagerScreen() {
   const navigation = useNavigation<any>();
@@ -13,6 +14,7 @@ export default function FolderedNotesManagerScreen() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
 
   const refresh = useCallback(() => {
     setFolders(getFolders());
@@ -45,13 +47,55 @@ export default function FolderedNotesManagerScreen() {
     ]);
   };
 
+  const handleCreateFolder = async (name: string) => {
+    try {
+      const folderId = await addFolder(name.trim(), "Notes");
+      setExpandedFolderId(folderId);
+      setFolderSheetVisible(false);
+      refresh();
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
+  const handleAddNote = (folder: Folder) => {
+    const availableNotes = notes.filter((note) => note.folderId !== folder.id);
+    if (availableNotes.length === 0) {
+      Alert.alert("No notes available", "All notes are already inside this folder.");
+      return;
+    }
+
+    Alert.alert("Add note to folder", folder.name, [
+      ...availableNotes.slice(0, 8).map((note) => ({
+        text: note.title || "Untitled note",
+        onPress: () => {
+          updateNoteFolder(note.id, folder.id);
+          setExpandedFolderId(folder.id);
+          refresh();
+        },
+      })),
+      { text: "Cancel", style: "cancel" },
+    ]);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={folders}
+      />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Foldered notes</Text>
+        </View>
+        <TouchableOpacity style={styles.headerButton} onPress={() => setFolderSheetVisible(true)}>
+          <MaterialIcons name="create-new-folder" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Foldered notes</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 110 }}>
@@ -70,6 +114,9 @@ export default function FolderedNotesManagerScreen() {
                   <Text style={styles.folderName}>{folder.name}</Text>
                   <Text style={styles.folderCount}>{items.length} note{items.length === 1 ? "" : "s"}</Text>
                 </View>
+                <TouchableOpacity style={styles.folderActionButton} onPress={() => handleAddNote(folder)}>
+                  <MaterialIcons name="add" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
                 <MaterialIcons name={expandedFolderId === folder.id ? "expand-less" : "expand-more"} size={22} color="#94A3B8" />
               </TouchableOpacity>
 
@@ -109,12 +156,15 @@ export default function FolderedNotesManagerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#050816" },
-  header: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingBottom: 8 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 8 },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 14 },
+  headerButton: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#1F2A43", alignItems: "center", justifyContent: "center" },
   headerTitle: { color: "#FFFFFF", fontSize: 24, fontWeight: "800" },
   folderBlock: { marginBottom: 18 },
   folderHeader: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   folderName: { color: "#58A6FF", fontSize: 16, fontWeight: "800" },
   folderCount: { color: "#94A3B8", fontSize: 12, marginTop: 3 },
+  folderActionButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#4B76E7", alignItems: "center", justifyContent: "center" },
   folderEmptyText: { color: "#94A3B8", backgroundColor: "#0B1220", borderRadius: 14, padding: 14, marginBottom: 10 },
   card: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#111827", borderRadius: 18, padding: 14, marginBottom: 10 },
   cardTitle: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },

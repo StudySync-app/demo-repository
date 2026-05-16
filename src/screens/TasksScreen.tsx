@@ -15,6 +15,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 import {
   addTask,
@@ -95,6 +96,7 @@ export default function TasksScreen() {
   // Modal visibility state
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
 
   const refreshFolders = useCallback(() => {
     setFolders(getFolders());
@@ -208,8 +210,17 @@ const handleCreateFolder = async (name: string, category: string) => {
     const next = new Date(dueDate);
     next.setHours(hour, minute, 0, 0);
     setDueDate(next);
+    setShowReminderPicker(false);
     setShowReminderModal(false);
   };
+
+  const reminderPickerValue = useMemo(() => {
+    const next = new Date(dueDate);
+    if (reminderTime) {
+      next.setHours(reminderTime.hour, reminderTime.minute, 0, 0);
+    }
+    return next;
+  }, [dueDate, reminderTime]);
 
   const reminderLabel = reminderTime
     ? `${String(reminderTime.hour).padStart(2, "0")}:${String(reminderTime.minute).padStart(2, "0")}`
@@ -241,7 +252,24 @@ const handleCreateFolder = async (name: string, category: string) => {
             <View style={[styles.reminderSheet, { paddingBottom: insets.bottom + 20 }]}>
               <View style={styles.sheetHandle} />
               <Text style={styles.sheetTitle}>Set reminder time</Text>
-              <Text style={styles.sheetSubtitle}>StudySync will show a phone notification at the selected time.</Text>
+              <Text style={styles.sheetSubtitle}>Choose a quick time or set your own exact reminder time.</Text>
+              <TouchableOpacity style={styles.customReminderButton} onPress={() => setShowReminderPicker(true)}>
+                <MaterialIcons name="schedule" size={20} color="#FFFFFF" />
+                <Text style={styles.customReminderText}>Choose custom time</Text>
+                <Text style={styles.reminderOptionTime}>{reminderLabel}</Text>
+              </TouchableOpacity>
+              {showReminderPicker ? (
+                <DateTimePicker
+                  value={reminderPickerValue}
+                  mode="time"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(event, selectedDate) => {
+                    if (Platform.OS !== "ios") setShowReminderPicker(false);
+                    if (event.type === "dismissed" || !selectedDate) return;
+                    setReminder(selectedDate.getHours(), selectedDate.getMinutes());
+                  }}
+                />
+              ) : null}
               {[
                 { label: "Morning", time: "08:00", hour: 8, minute: 0 },
                 { label: "Noon", time: "12:00", hour: 12, minute: 0 },
@@ -257,6 +285,7 @@ const handleCreateFolder = async (name: string, category: string) => {
               ))}
               <TouchableOpacity style={styles.reminderClear} onPress={() => {
                 setReminderTime(null);
+                setShowReminderPicker(false);
                 setShowReminderModal(false);
               }}>
                 <Text style={styles.reminderClearText}>Clear reminder time</Text>
@@ -433,6 +462,8 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 42, height: 5, backgroundColor: "#334155", borderRadius: 999, alignSelf: "center", marginBottom: 18 },
   sheetTitle: { color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 6 },
   sheetSubtitle: { color: "#A3AED0", fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  customReminderButton: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: ACCENT, borderRadius: 16, padding: 14, marginBottom: 12 },
+  customReminderText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800", flex: 1 },
   reminderOption: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#111827", borderRadius: 16, padding: 14, marginBottom: 10 },
   reminderOptionText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800", flex: 1 },
   reminderOptionTime: { color: "#94B8FF", fontSize: 13, fontWeight: "800" },
