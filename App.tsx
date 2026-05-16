@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -16,6 +16,7 @@ import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
 
 // ✅ Import your main app tabs (adjust path if needed)
 import MainTabs from "./src/navigation/MainTabs";
+import { configureNotifications } from "./src/lib/notification";
 
 // ✅ Navigation Types
 export type RootStackParamList = {
@@ -35,6 +36,10 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   // ✅ Controls whether to show Splash or Navigation
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    configureNotifications();
+  }, []);
 
   // ✅ Show Splash Screen First
   if (showSplash) {
