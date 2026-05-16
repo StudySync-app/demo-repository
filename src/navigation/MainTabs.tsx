@@ -1,6 +1,6 @@
-import React, { useState } from "react";import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { Text, Image } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { DeviceEventEmitter, Text, Image } from "react-native";
 
 import TasksScreen from "../screens/TasksScreen";
 import NotesScreen from "../screens/NotesScreen";
@@ -9,12 +9,11 @@ import MediaImportSheet from "../components/MediaImportSheet";
 import HomeTabs from "./HomeTabs";
 import { COLORS } from "../constants/theme";
 
-import { useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../lib/supabase";
 
-import { DeviceEventEmitter } from "react-native";
 import { useAppSettings } from "../settings/AppSettingsContext";
+import { getSetting } from "../db/settings";
 
 const Tab = createBottomTabNavigator();
 
@@ -27,32 +26,35 @@ export default function MainTabs() {
   const [isSheetVisible, setSheetVisible] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const { isLight, textScale } = useAppSettings();
+
+  const applyProfileImage = useCallback((url?: string | null) => {
+    setProfileImage(url ? `${url}?t=${Date.now()}` : null);
+  }, []);
+
+  const loadProfileImage = useCallback(async () => {
+    const { data } = await supabase.auth.getUser();
+    const storedAvatar = getSetting("profileAvatarUrl", "");
+    const url = storedAvatar || data.user?.user_metadata?.avatar_url;
+    applyProfileImage(url);
+  }, [applyProfileImage]);
   
   useEffect(() => {
-  const loadUser = async () => {
-    const { data } = await supabase.auth.getUser();
-const url = data.user?.user_metadata?.avatar_url;
-setProfileImage(url ? url + "?t=" + Date.now() : null);  };
-  loadUser();
-}, []);
+    loadProfileImage();
+  }, [loadProfileImage]);
 
 useFocusEffect(
   React.useCallback(() => {
-    const loadUser = async () => {
-      const { data } = await supabase.auth.getUser();
-const url = data.user?.user_metadata?.avatar_url;
-setProfileImage(url ? url + "?t=" + Date.now() : null);    };
-    loadUser();
-  }, [])
+    loadProfileImage();
+  }, [loadProfileImage])
 );
 
 useEffect(() => {
   const subscription = DeviceEventEmitter.addListener("avatarUpdated", (url) => {
-    setProfileImage(url + "?t=" + Date.now());
+    applyProfileImage(url);
   });
 
   return () => subscription.remove();
-}, []);
+}, [applyProfileImage]);
 
   return (
     <>

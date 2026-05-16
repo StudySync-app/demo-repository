@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  DeviceEventEmitter,
+  Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
@@ -8,29 +10,58 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { CommonActions, useNavigation } from "@react-navigation/native";
+import { CommonActions, useFocusEffect, useNavigation } from "@react-navigation/native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { User } from "@supabase/supabase-js";
 
 import { supabase } from "../../lib/supabase";
 import { useAppSettings } from "../../settings/AppSettingsContext";
+import { getSetting } from "../../db/settings";
 
 export default function MyAccountScreen() {
   const navigation = useNavigation<any>();
   const { isLight, textScale } = useAppSettings();
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState({
+    name: "StudySync user",
+    birthday: "",
+    gender: "",
+    avatarUrl: "",
+  });
+
+  const loadUser = React.useCallback(async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      Alert.alert("Account error", error.message);
+    }
+
+    const metadata = data.user?.user_metadata || {};
+    setUser(data.user ?? null);
+    setProfile({
+      name: getSetting("profileName", "") || metadata.full_name || "StudySync user",
+      birthday: getSetting("profileBirthday", "") || metadata.birthday || "",
+      gender: getSetting("profileGender", "") || metadata.gender || "",
+      avatarUrl: getSetting("profileAvatarUrl", "") || metadata.avatar_url || "",
+    });
+  }, []);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        Alert.alert("Account error", error.message);
-      }
-      setUser(data.user ?? null);
-    };
-
     loadUser();
-  }, []);
+
+    const profileSubscription = DeviceEventEmitter.addListener("profileUpdated", loadUser);
+    const avatarSubscription = DeviceEventEmitter.addListener("avatarUpdated", loadUser);
+
+    return () => {
+      profileSubscription.remove();
+      avatarSubscription.remove();
+    };
+  }, [loadUser]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUser();
+    }, [loadUser])
+  );
 
   const handleSignOut = () => {
     Alert.alert("Sign out", "Do you want to sign out of StudySync?", [
@@ -57,8 +88,8 @@ export default function MyAccountScreen() {
     ]);
   };
 
-  const fullName = user?.user_metadata?.full_name || "StudySync user";
   const email = user?.email || "No email loaded";
+  const profileParts = [profile.name || "StudySync user", email, profile.birthday, profile.gender].filter(Boolean);
 
   const content = (
     <ScrollView style={[styles.container, isLight && styles.lightContainer]} contentContainerStyle={styles.content}>
@@ -70,13 +101,21 @@ export default function MyAccountScreen() {
       </View>
 
       <TouchableOpacity style={[styles.card, isLight && styles.lightCard]} activeOpacity={0.85} onPress={() => navigation.navigate("PersonalDetails")}>
-        <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 18 * textScale }]}>Personal details</Text>
-        <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle, { fontSize: 12 * textScale }]}>{fullName} · {email}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={[styles.card, isLight && styles.lightCard]} activeOpacity={0.85} onPress={() => navigation.navigate("Payments")}>
-        <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 18 * textScale }]}>Payments & subscriptions</Text>
-        <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle, { fontSize: 12 * textScale }]}>Review your current plan, update payment methods, and view invoices.</Text>
+        <View style={styles.profileRow}>
+          {profile.avatarUrl ? (
+            <Image source={{ uri: `${profile.avatarUrl}?t=${Date.now()}` }} style={styles.profileAvatar} />
+          ) : (
+            <View style={[styles.profileAvatar, styles.profileAvatarFallback]}>
+              <MaterialIcons name="person" size={24} color="#58A6FF" />
+            </View>
+          )}
+          <View style={styles.profileText}>
+            <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 18 * textScale }]}>Personal details</Text>
+            <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle, { fontSize: 12 * textScale }]}>
+              {profileParts.join(" - ")}
+            </Text>
+          </View>
+        </View>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.signOutButton} activeOpacity={0.85} onPress={handleSignOut}>
@@ -117,6 +156,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
+  profileRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  profileAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#10223A" },
+  profileAvatarFallback: { alignItems: "center", justifyContent: "center" },
+  profileText: { flex: 1 },
   cardTitle: { color: "#FFFFFF", fontSize: 18, fontWeight: "600", marginBottom: 0 },
   cardSubtitle: { color: "#FFFFFF", fontSize: 12, lineHeight: 22 },
   lightTitle: { color: "#0F172A" },

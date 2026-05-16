@@ -104,9 +104,9 @@ function applyGlobalTextSettings(settings: AppSettings) {
   const fontScale = settings.fontScale || 1;
   const dyslexiaStyle = settings.useDyslexiaFont
     ? {
-        fontFamily: Platform.select({ android: "sans-serif", ios: "Avenir", default: undefined }),
-        lineHeight: 22 * fontScale,
-        letterSpacing: 0.3,
+        fontFamily: Platform.select({ android: "monospace", ios: "Courier", default: "monospace" }),
+        lineHeight: 24 * fontScale,
+        letterSpacing: 0.6,
       }
     : {};
 

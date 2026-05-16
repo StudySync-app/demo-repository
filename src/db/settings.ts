@@ -28,7 +28,6 @@ export const defaultSettings = {
   profileAvatarUrl: "",
   homeAddress: "",
   workAddress: "",
-  paymentMethod: "",
   autoBackupsEnabled: false,
   lastBackup: "Never",
   backupTasks: true,

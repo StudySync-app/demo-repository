@@ -24,7 +24,6 @@ import {
   ImportedFilesManagerScreen,
   LanguageScreen,
   NotificationCategoriesScreen,
-  PaymentsScreen,
   PersonalDetailsScreen,
   RecoveryEmailScreen,
   RecoveryPhoneScreen,
@@ -56,7 +55,6 @@ export default function SettingsTabs() {
       <Stack.Screen name="StudySync" component={StudySyncScreen} />
       <Stack.Screen name="PersonalDetails" component={PersonalDetailsScreen} />
       <Stack.Screen name="Address" component={AddressScreen} />
-      <Stack.Screen name="Payments" component={PaymentsScreen} />
       <Stack.Screen name="ThemeMode" component={ThemeModeScreen} />
       <Stack.Screen name="Language" component={LanguageScreen} />
       <Stack.Screen name="FontSize" component={FontSizeScreen} />

@@ -1,7 +1,9 @@
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Image,
   ImageBackground,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -123,6 +125,7 @@ function useStoredSetting<T>(key: string, fallback: T) {
 }
 
 export function PersonalDetailsScreen() {
+  const { isLight } = useAppSettings();
   const [, setStoredName] = useStoredSetting("profileName", "");
   const [, setStoredBirthday] = useStoredSetting("profileBirthday", "");
   const [, setStoredGender] = useStoredSetting("profileGender", "");
@@ -136,10 +139,11 @@ export function PersonalDetailsScreen() {
   useFocusEffect(
     useCallback(() => {
       supabase.auth.getUser().then(({ data }) => {
-        setName(getSetting("profileName", data.user?.user_metadata?.full_name || "StudySync user"));
-        setBirthday(getSetting("profileBirthday", data.user?.user_metadata?.birthday || ""));
-        setGender(getSetting("profileGender", data.user?.user_metadata?.gender || ""));
-        setAvatarUrl(getSetting("profileAvatarUrl", data.user?.user_metadata?.avatar_url || ""));
+        const metadata = data.user?.user_metadata || {};
+        setName(getSetting("profileName", "") || metadata.full_name || "StudySync user");
+        setBirthday(getSetting("profileBirthday", "") || metadata.birthday || "");
+        setGender(getSetting("profileGender", "") || metadata.gender || "");
+        setAvatarUrl(getSetting("profileAvatarUrl", "") || metadata.avatar_url || "");
         setEmail(data.user?.email || "");
       });
     }, [])
@@ -209,6 +213,9 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
     setStoredName(name.trim());
     setStoredBirthday(birthday.trim());
     setStoredGender(gender.trim());
+    setName(name.trim());
+    setBirthday(birthday.trim());
+    setGender(gender.trim());
 
     const { error } = await supabase.auth.updateUser({
       data: {
@@ -221,12 +228,25 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
 
     await supabase.auth.refreshSession();
     DeviceEventEmitter.emit("profileUpdated", { name: name.trim(), birthday: birthday.trim(), gender: gender.trim() });
+    if (avatarUrl) {
+      DeviceEventEmitter.emit("avatarUpdated", avatarUrl);
+    }
     Alert.alert(error ? "Saved locally" : "Profile saved", error?.message || "Your profile details were updated.");
   };
 
   return (
     <ScreenShell title="Personal details">
       <Text style={styles.sectionCaption}>Basic info</Text>
+      <TouchableOpacity style={styles.avatarPreviewWrap} activeOpacity={0.85} onPress={handlePickImage}>
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={styles.avatarPreview} />
+        ) : (
+          <View style={styles.avatarFallback}>
+            <MaterialIcons name="person" size={40} color="#58A6FF" />
+          </View>
+        )}
+        <Text style={[styles.avatarPreviewText, isLight && styles.lightSubtitle]}>{avatarUrl ? "Tap to replace profile picture" : "Tap to upload profile picture"}</Text>
+      </TouchableOpacity>
       <SettingsRow
         title="Profile picture"
         subtitle={avatarUrl ? "Profile image is set. Tap to replace it." : "Tap to upload your profile image."}
@@ -239,27 +259,6 @@ const fileName = `${user.id}-${Date.now()}.jpg`;
       <Text style={styles.sectionCaption}>Contact info</Text>
       <SettingsRow title="Email" subtitle={email || "No email loaded"} icon="email" />
       <SettingsRow title="Phone" subtitle={getSetting("recoveryPhone", "+63 912345678")} icon="phone" />
-    </ScreenShell>
-  );
-}
-
-export function PaymentsScreen() {
-  const [paymentMethod, setPaymentMethod] = useStoredSetting("paymentMethod", "");
-  const [draft, setDraft] = useState(paymentMethod);
-
-  return (
-    <ScreenShell title="Payments & subscriptions">
-      <Text style={styles.sectionCaption}>Payment method</Text>
-      <TextInput value={draft} onChangeText={setDraft} placeholder="Payment method label" placeholderTextColor="#A3AED0" style={styles.input} />
-      <TouchableOpacity style={styles.primaryButton} onPress={() => {
-        setPaymentMethod(draft.trim());
-        Alert.alert("Payment method saved", draft.trim() || "Payment method cleared.");
-      }}>
-        <Text style={styles.primaryText}>Save payment method</Text>
-      </TouchableOpacity>
-      <SettingsRow title="Manage payment methods" subtitle={paymentMethod || "No payment method is connected."} icon="credit-card" />
-      <SettingsRow title="Payment info" subtitle="Local payment preferences are saved on this device." icon="receipt" />
-      <SettingsRow title="Subscriptions" subtitle="Current plan: Local MVP." icon="workspace-premium" />
     </ScreenShell>
   );
 }
@@ -362,7 +361,20 @@ export function FontSizeScreen() {
       />
       <View style={[styles.card, isLight && styles.lightCard]}>
         <Text style={[styles.cardTitle, isLight && styles.lightTitle, { fontSize: 15 * textScale }]}>{t("Font size")}</Text>
-        <Text style={[styles.previewText, isLight && styles.lightTitle, { fontSize: 15 * fontScale, letterSpacing: useDyslexiaFont ? 0.6 : 0 }]}>The quick brown fox jump over the lazy dog</Text>
+        <Text
+          style={[
+            styles.previewText,
+            isLight && styles.lightTitle,
+            {
+              fontSize: 15 * fontScale,
+              fontFamily: useDyslexiaFont ? Platform.select({ android: "monospace", ios: "Courier", default: "monospace" }) : undefined,
+              lineHeight: useDyslexiaFont ? 24 * fontScale : undefined,
+              letterSpacing: useDyslexiaFont ? 0.6 : 0,
+            },
+          ]}
+        >
+          The quick brown fox jumps over the lazy dog
+        </Text>
         <View style={styles.segmentRow}>
           {[0.9, 1, 1.15].map((item) => (
             <TouchableOpacity
@@ -885,6 +897,10 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 22 },
   headerTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "700" },
   sectionCaption: { color: "#FFFFFF", fontSize: 19, marginBottom: 10 },
+  avatarPreviewWrap: { alignItems: "center", marginBottom: 16 },
+  avatarPreview: { width: 104, height: 104, borderRadius: 52, borderWidth: 3, borderColor: "#58A6FF", backgroundColor: "#10223A" },
+  avatarFallback: { width: 104, height: 104, borderRadius: 52, borderWidth: 3, borderColor: "#58A6FF", backgroundColor: "#10223A", alignItems: "center", justifyContent: "center" },
+  avatarPreviewText: { color: "#FFFFFF", fontSize: 12, marginTop: 8, fontWeight: "700" },
 
   card: { backgroundColor: "#1A2535", borderRadius: 14, paddingVertical: 13, paddingHorizontal: 14, marginBottom: 10 },
   lightCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },

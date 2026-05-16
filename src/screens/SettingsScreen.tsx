@@ -21,7 +21,6 @@ type SettingsStackParamList = {
   MyAccount: undefined;
   PersonalDetails: undefined;
   Address: undefined;
-  Payments: undefined;
   Personalization: undefined;
   ThemeMode: undefined;
   Language: undefined;
@@ -64,7 +63,6 @@ const settingsItems: SettingItem[] = [
 const searchableSettings: SettingItem[] = [
   ...settingsItems,
   { title: "Personal details", icon: "person", route: "PersonalDetails", parent: "My account" },
-  { title: "Payments & subscriptions", icon: "credit-card", route: "Payments", parent: "My account" },
   { title: "Dark or light mode", icon: "dark-mode", route: "ThemeMode", parent: "Personalization" },
   { title: "Language", icon: "language", route: "Language", parent: "Personalization" },
   { title: "Font size & style", icon: "format-size", route: "FontSize", parent: "Personalization" },
