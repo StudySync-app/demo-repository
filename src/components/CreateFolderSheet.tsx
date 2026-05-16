@@ -21,16 +21,12 @@ interface CreateFolderSheetProps {
   onSelectFolder?: (folderId: number | null) => void;
 }
 
-const CATEGORIES = ['Audios', 'Videos', 'Images', 'All'];
-
 export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], selectedFolderId = null, onSelectFolder }: CreateFolderSheetProps) => {
   const { height: screenHeight } = useWindowDimensions();
   const [folderName, setFolderName] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const handleCreate = () => {
     if (folderName.trim()) {
-      onCreate(folderName, selectedCategory);
       setFolderName('');
       onClose();
     }
@@ -53,37 +49,15 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -20} 
         style={styles.keyboardView}
       >
-        <View style={[styles.sheetContainer, { height: screenHeight * 0.6 }]}>
+        <View style={[styles.sheetContainer, { height: screenHeight * 0.4 }]}>
           {/* Top Grab Handle */}
           <View style={styles.handle} />
 
           <View style={styles.headerRow}>
-             <Text style={styles.sheetTitle}>New Folder</Text>
+             <Text style={styles.sheetTitle}>New folder for to do's</Text>
           </View>
 
-          <Text style={styles.sectionLabel}>Existing folder</Text>
-          <View style={styles.folderRow}>
-            <TouchableOpacity
-              style={[styles.folderChip, selectedFolderId == null && styles.folderChipActive]}
-              onPress={() => onSelectFolder?.(null)}
-            >
-              <Text style={[styles.folderChipText, selectedFolderId == null && styles.folderChipTextActive]}>
-                No folder
-              </Text>
-            </TouchableOpacity>
-            {folders.map((folder) => (
-              <TouchableOpacity
-                key={folder.id}
-                style={[styles.folderChip, selectedFolderId === folder.id && styles.folderChipActive]}
-                onPress={() => onSelectFolder?.(folder.id)}
-              >
-                <Text style={[styles.folderChipText, selectedFolderId === folder.id && styles.folderChipTextActive]}>
-                  {folder.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
+          
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -96,27 +70,6 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
             />
           </View>
 
-          <Text style={styles.description}>
-            Create an empty folder that is ready to hold tasks, notes, media, audio, or video files.
-          </Text>
-
-          <View style={styles.categoryRow}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryBtn,
-                  selectedCategory === cat && styles.categoryBtnActive,
-                ]}
-                onPress={() => setSelectedCategory(cat)}
-              >
-                <Text style={[
-                    styles.categoryText,
-                    selectedCategory === cat && styles.categoryTextActive
-                ]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
           <TouchableOpacity 
             style={styles.createButton} 
             onPress={handleCreate}

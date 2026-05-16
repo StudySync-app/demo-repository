@@ -130,12 +130,6 @@ const handleRestore = async (taskId: number) => {
             <>
               <TouchableOpacity
                 style={styles.actionBtn}
-                onPress={() => setFolderSheetVisible(true)}
-              >
-                <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
                 onPress={() => navigation.navigate("TasksScreen")}
               >
                 <MaterialIcons name="add" size={24} color="#FFF" />

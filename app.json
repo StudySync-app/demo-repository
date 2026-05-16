@@ -39,7 +39,10 @@
               "host": "oauth-callback"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -52,7 +55,8 @@
       "expo-audio",
       "expo-video",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {
