@@ -32,6 +32,7 @@ export function addNote(
     audioList: JSON.stringify(audioList || []),
     imageList: JSON.stringify(imageList || []),
     videoList: JSON.stringify(videoList || []),
+    pdfList: JSON.stringify(pdfList || []),
     folderId: folderId ?? null,
     synced: false,
     createdAt: new Date().toISOString()

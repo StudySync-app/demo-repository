@@ -37,6 +37,7 @@ import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
 
 import { DeviceEventEmitter } from "react-native";
+import { createCloudSnapshot, restoreCloudSnapshot, type StudySyncCloudSnapshot } from "../../db/cloudSync";
 
 
 type RowProps = {
@@ -653,49 +654,132 @@ export function ImportedFilesManagerScreen() {
 export function CloudSyncScreen() {
   const isOnline = useNetwork();
   const [lastCloudSync, setLastCloudSync] = useStoredSetting("lastCloudSync", "Never");
+  const [cloudStatus, setCloudStatus] = useState("No cloud snapshot loaded yet.");
+  const [syncing, setSyncing] = useState(false);
 
-  const syncNow = async () => {
+  const getUserId = async () => {
     if (!isOnline) {
       Alert.alert("Offline", "Connect to the internet before cloud sync.");
-      return;
+      return null;
     }
 
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
     if (!userId) {
       Alert.alert("Sign in required", "Sign in before cloud sync.");
-      return;
+      return null;
     }
+    return userId;
+  };
 
-    const payload = JSON.stringify({
-      syncedAt: new Date().toISOString(),
-      tasks: getTasks(),
-      notes: getNotes(),
-      media: getMedia(),
-      folders: getFolders(),
-      settings: getSettingsSnapshot(),
-    }, null, 2);
-    const path = `${userId}/studysync-sync-${Date.now()}.json`;
-    const { error } = await supabase.storage.from("backups").upload(path, payload, {
+  const uploadSnapshot = async () => {
+    const userId = await getUserId();
+    if (!userId) return;
+
+    setSyncing(true);
+    const snapshot = createCloudSnapshot();
+    const payload = JSON.stringify(snapshot, null, 2);
+    const latestPath = `${userId}/latest.json`;
+    const historyPath = `${userId}/history/studysync-sync-${Date.now()}.json`;
+
+    const latest = await supabase.storage.from("backups").upload(latestPath, payload, {
       contentType: "application/json",
       upsert: true,
     });
 
-    if (error) {
-      Alert.alert("Cloud sync failed", `${error.message}\n\nMake sure a Supabase Storage bucket named "backups" exists.`);
+    if (latest.error) {
+      setSyncing(false);
+      Alert.alert("Cloud sync failed", `${latest.error.message}\n\nMake sure a Supabase Storage bucket named "backups" exists.`);
       return;
     }
 
+    await supabase.storage.from("backups").upload(historyPath, payload, {
+      contentType: "application/json",
+      upsert: true,
+    });
+
     const stamp = new Date().toLocaleString();
     setLastCloudSync(stamp);
-    Alert.alert("Cloud sync complete", "Your local StudySync data was uploaded to Supabase backups.");
+    setCloudStatus(`Uploaded ${snapshot.tasks.length} tasks, ${snapshot.notes.length} notes, ${snapshot.media.length} media, and ${snapshot.folders.length} folders.`);
+    setSyncing(false);
+    Alert.alert("Cloud sync complete", "Your local StudySync data was uploaded and saved as the latest cloud snapshot.");
+  };
+
+  const readDownloadedSnapshot = async (blob: Blob) => {
+    if (typeof blob.text === "function") {
+      return JSON.parse(await blob.text()) as StudySyncCloudSnapshot;
+    }
+
+    return await new Promise<StudySyncCloudSnapshot>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          resolve(JSON.parse(String(reader.result)));
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(blob);
+    });
+  };
+
+  const restoreLatest = async () => {
+    const userId = await getUserId();
+    if (!userId) return;
+
+    Alert.alert("Restore cloud data", "This will replace local StudySync data with the latest cloud snapshot. Continue?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Restore",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setSyncing(true);
+            const { data, error } = await supabase.storage.from("backups").download(`${userId}/latest.json`);
+            if (error || !data) throw error || new Error("No latest cloud snapshot found.");
+            const snapshot = await readDownloadedSnapshot(data);
+            restoreCloudSnapshot(snapshot);
+            const stamp = new Date().toLocaleString();
+            setLastCloudSync(stamp);
+            setCloudStatus(`Restored cloud snapshot from ${new Date(snapshot.syncedAt).toLocaleString()}.`);
+            DeviceEventEmitter.emit("cloudSyncRestored");
+            Alert.alert("Restore complete", "Latest cloud data was restored to this device.");
+          } catch (error: any) {
+            Alert.alert("Restore failed", error.message || "Could not restore the latest cloud snapshot.");
+          } finally {
+            setSyncing(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  const checkCloud = async () => {
+    const userId = await getUserId();
+    if (!userId) return;
+
+    setSyncing(true);
+    const { data, error } = await supabase.storage.from("backups").list(userId, { limit: 20 });
+    setSyncing(false);
+
+    if (error) {
+      Alert.alert("Cloud check failed", error.message);
+      return;
+    }
+
+    const latest = data?.find((item) => item.name === "latest.json");
+    setCloudStatus(latest ? `Latest cloud snapshot found. Updated: ${latest.updated_at ? new Date(latest.updated_at).toLocaleString() : "unknown"}` : "No latest cloud snapshot found.");
   };
 
   return (
     <ScreenShell title="Cloud sync">
       <SettingsRow title="Connection" subtitle={isOnline ? "Online" : "Offline"} icon="wifi" />
       <SettingsRow title="Last cloud sync" subtitle={lastCloudSync} icon="cloud-done" />
-      <PrimaryButton title="Sync files now" onPress={() => syncNow().catch((error) => Alert.alert("Cloud sync failed", error.message || "Could not sync files."))} />
+      <SettingsRow title="Cloud status" subtitle={cloudStatus} icon="cloud-queue" />
+      <PrimaryButton title={syncing ? "Working..." : "Upload local data to cloud"} onPress={() => uploadSnapshot().catch((error) => Alert.alert("Cloud sync failed", error.message || "Could not sync files."))} />
+      <PrimaryButton title="Restore latest cloud data" onPress={() => restoreLatest().catch((error) => Alert.alert("Restore failed", error.message || "Could not restore files."))} />
+      <PrimaryButton title="Check cloud snapshot" onPress={() => checkCloud().catch((error) => Alert.alert("Cloud check failed", error.message || "Could not check cloud storage."))} />
     </ScreenShell>
   );
 }

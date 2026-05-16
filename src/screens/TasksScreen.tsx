@@ -23,7 +23,7 @@ import {
   type Task
 } from "../db/tasks";
 import { addFolder, getFolders, type Folder } from "../db/folders";
-import { notifyNewTask, scheduleTaskReminder } from "../lib/notification";
+import { cancelTaskReminder, notifyNewTask, scheduleTaskReminder } from "../lib/notification";
 import { useTaskStore } from "../store/useTaskStore";
 import { CreateFolderSheet } from "../components/CreateFolderSheet";
 import { useAppSettings } from "../settings/AppSettingsContext";
@@ -154,6 +154,8 @@ export default function TasksScreen() {
     }
     const iso = dueWithReminder.toISOString();
 
+    let savedTaskId = editingId;
+
     if (editingId != null) {
       updateTaskFull(editingId, {
         title: title.trim(),
@@ -164,14 +166,18 @@ export default function TasksScreen() {
         folderId
       });
     } else {
-      addTask(title.trim(), priority, iso, folderId, {
+      savedTaskId = Number(addTask(title.trim(), priority, iso, folderId, {
         description: description.trim() || null,
         status: progress
-      });
+      }));
     }
 
     try {
-      await scheduleTaskReminder(title.trim(), dueWithReminder);
+      if (reminderTime && savedTaskId != null) {
+        await scheduleTaskReminder(title.trim(), dueWithReminder, savedTaskId);
+      } else if (savedTaskId != null) {
+        await cancelTaskReminder(savedTaskId);
+      }
       if (editingId == null) await notifyNewTask(title.trim());
     } catch { /* ignored */ }
 
