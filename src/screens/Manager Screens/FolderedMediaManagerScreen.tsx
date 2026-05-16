@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -8,6 +8,7 @@ import { addFolder, getFolders, type Folder } from "../../db/folders";
 import { deleteMedia, getMedia, updateMediaFolder, type MediaItem } from "../../db/media";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 import { useAppSettings } from "../../settings/AppSettingsContext";
+import { openFileUri } from "../../lib/openFile";
 
 export default function FolderedMediaManagerScreen() {
   const navigation = useNavigation<any>();
@@ -17,6 +18,7 @@ export default function FolderedMediaManagerScreen() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [expandedFolderId, setExpandedFolderId] = useState<number | null>(null);
   const [folderSheetVisible, setFolderSheetVisible] = useState(false);
+  const [openingId, setOpeningId] = useState<number | null>(null);
 
   const refresh = useCallback(() => {
     setFolders(getFolders());
@@ -74,6 +76,17 @@ export default function FolderedMediaManagerScreen() {
       })),
       { text: "Cancel", style: "cancel" },
     ]);
+  };
+
+  const openMedia = async (item: MediaItem) => {
+    try {
+      setOpeningId(item.id);
+      await openFileUri(item.uri);
+    } catch {
+      Alert.alert("Preview unavailable", "This file cannot be opened from its saved location.");
+    } finally {
+      setOpeningId(null);
+    }
   };
 
   return (
@@ -134,8 +147,8 @@ export default function FolderedMediaManagerScreen() {
                         <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle]}>{item.type || "file"}</Text>
                       </View>
                       {item.uri ? (
-                        <TouchableOpacity onPress={() => Linking.openURL(item.uri!)} style={styles.iconButton}>
-                          <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                        <TouchableOpacity onPress={() => openMedia(item)} style={styles.iconButton}>
+                          {openingId === item.id ? <ActivityIndicator size="small" color="#FFFFFF" /> : <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />}
                         </TouchableOpacity>
                       ) : null}
                       <TouchableOpacity onPress={() => {

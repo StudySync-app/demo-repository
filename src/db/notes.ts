@@ -1,4 +1,5 @@
 import { db } from "./client";
+import { initDatabase } from "./init";
 import { notes } from "./schema";
 import { desc, eq, like, or, sql } from "drizzle-orm";
 
@@ -25,6 +26,7 @@ export function addNote(
   pdfList: any[] = [],
   folderId?: number | null
 ) {
+  initDatabase();
   return db.insert(notes).values({
     title,
     content,
@@ -67,6 +69,7 @@ export function updateNote(
   pdfList: any[] = [],
   folderId?: number | null
 ) {
+  initDatabase();
   return db.update(notes).set({
     title,
     content,

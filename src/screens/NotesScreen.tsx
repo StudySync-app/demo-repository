@@ -8,9 +8,9 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  ActivityIndicator,
   Share,
   Image,
-  Linking,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,6 +26,7 @@ import { getSetting } from "../db/settings";
 import { notifyNewNote, scheduleNoteReviewReminder } from "../lib/notification";
 import { generateQuizQuestions, summarizeStudyNotes } from "../lib/ai";
 import { useAppSettings } from "../settings/AppSettingsContext";
+import { openFileUri } from "../lib/openFile";
 
 const DRAFT_KEY = "studysync.note.draft";
 
@@ -48,6 +49,8 @@ export default function NoteScreen({ navigation }: any) {
   const [isEditing, setIsEditing] = useState(!noteId);
   const [showAIMenu, setShowAIMenu] = useState(false);
   const [hasPendingAI, setHasPendingAI] = useState(false);
+  const [busyLabel, setBusyLabel] = useState("");
+  const [openingAttachmentId, setOpeningAttachmentId] = useState<string | null>(null);
 
   // Formatting States
   const [fontSize, setFontSize] = useState(17);
@@ -232,6 +235,7 @@ export default function NoteScreen({ navigation }: any) {
     }
   
     try {
+      setBusyLabel("Saving note...");
       // 2. Save to Database
       if (noteId) {
         await updateNote(noteId, title, content, audioList, imageList, videoList, pdfList, folderId);
@@ -248,6 +252,8 @@ export default function NoteScreen({ navigation }: any) {
     } catch (error) {
       console.error("Save failed:", error);
       Alert.alert("Error", "Could not save your note.");
+    } finally {
+      setBusyLabel("");
     }
   };
 
@@ -259,13 +265,19 @@ export default function NoteScreen({ navigation }: any) {
   };
 
   const exportText = async () => {
+    setBusyLabel("Preparing text export...");
     const body = `${title.trim() || "Untitled note"}\n${currentDate}\n\n${content}`;
     const file = new File(Paths.cache, buildExportName("txt"));
     file.write(body);
-    await Share.share({ title: title.trim() || "StudySync Note", message: body, url: file.uri });
+    try {
+      await Share.share({ title: title.trim() || "StudySync Note", message: body, url: file.uri });
+    } finally {
+      setBusyLabel("");
+    }
   };
 
   const exportPdf = async () => {
+    setBusyLabel("Preparing PDF...");
     const safeTitle = escapePdfText(title.trim() || "Untitled note");
     const safeDate = escapePdfText(currentDate);
     const lines = wrapPdfLines(content || " ", 72).slice(0, 42);
@@ -286,7 +298,11 @@ export default function NoteScreen({ navigation }: any) {
     const pdf = makeSimplePdf(textCommands);
     const file = new File(Paths.cache, buildExportName("pdf"));
     file.write(pdf);
-    await Share.share({ title: title.trim() || "StudySync Note", message: "PDF exported from StudySync.", url: file.uri });
+    try {
+      await Share.share({ title: title.trim() || "StudySync Note", message: "PDF exported from StudySync.", url: file.uri });
+    } finally {
+      setBusyLabel("");
+    }
   };
 
   const handleExport = () => {
@@ -304,11 +320,17 @@ export default function NoteScreen({ navigation }: any) {
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
-      allowsMultipleSelection: true,
-      quality: 1,
-    });
+    let result: ImagePicker.ImagePickerResult;
+    try {
+      setBusyLabel("Opening media picker...");
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsMultipleSelection: true,
+        quality: 1,
+      });
+    } finally {
+      setBusyLabel("");
+    }
 
     if (result.canceled) return;
 
@@ -325,7 +347,9 @@ export default function NoteScreen({ navigation }: any) {
 
   const handlePickAudio = async () => {
     try {
+      setBusyLabel("Opening audio picker...");
       const picked = await File.pickFileAsync(undefined, "audio/*");
+      setBusyLabel("Attaching audio...");
       const file = Array.isArray(picked) ? picked[0] : picked;
       if (!file) return;
       const next = [{ id: Date.now().toString(), uri: file.uri, name: file.name || "Audio" }, ...audioList];
@@ -333,6 +357,21 @@ export default function NoteScreen({ navigation }: any) {
       updateHistory(title, content, next);
     } catch {
       Alert.alert("Audio import failed", "Could not attach the selected audio file.");
+    } finally {
+      setBusyLabel("");
+    }
+  };
+
+  const handleOpenAttachment = async (uri: string, id: string) => {
+    try {
+      setOpeningAttachmentId(id);
+      setBusyLabel("Opening file...");
+      await openFileUri(uri);
+    } catch (error: any) {
+      Alert.alert("Open failed", error.message || "Could not open this file.");
+    } finally {
+      setOpeningAttachmentId(null);
+      setBusyLabel("");
     }
   };
 
@@ -376,6 +415,7 @@ export default function NoteScreen({ navigation }: any) {
     }
 
     try {
+      setBusyLabel("Summarizing note...");
       const summary = await summarizeStudyNotes(content);
       const nextContent = `${content.trim()}\n\nAI summarization\n${summary}`.trim();
       setContent(nextContent);
@@ -383,6 +423,8 @@ export default function NoteScreen({ navigation }: any) {
       setHasPendingAI(true);
     } catch (error: any) {
       Alert.alert("AI summary failed", error.message || "Could not summarize this note.");
+    } finally {
+      setBusyLabel("");
     }
   };
 
@@ -398,6 +440,7 @@ export default function NoteScreen({ navigation }: any) {
     }
 
     try {
+      setBusyLabel("Generating quiz PDF...");
       const quiz = await generateQuizQuestions(content);
       const label = `AI generated quiz - ${title.trim() || "Untitled note"}`;
       const timestamp = new Date().toLocaleString();
@@ -421,6 +464,8 @@ export default function NoteScreen({ navigation }: any) {
       setHasPendingAI(true);
     } catch (error: any) {
       Alert.alert("AI quiz failed", error.message || "Could not generate quiz questions.");
+    } finally {
+      setBusyLabel("");
     }
   };
 
@@ -503,6 +548,13 @@ export default function NoteScreen({ navigation }: any) {
         </View>
       ) : null}
 
+      {busyLabel ? (
+        <View style={styles.loadingBanner}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingText}>{busyLabel}</Text>
+        </View>
+      ) : null}
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {canEdit ? (
           <TextInput
@@ -560,8 +612,8 @@ export default function NoteScreen({ navigation }: any) {
 
           {videoList.map((video) => (
             <View key={video.id || video.uri} style={styles.attachmentItem}>
-              <TouchableOpacity style={styles.fileAttachment} onPress={() => Linking.openURL(video.uri)}>
-                <Ionicons name="play-circle-outline" size={28} color="#fff" />
+              <TouchableOpacity style={styles.fileAttachment} onPress={() => handleOpenAttachment(video.uri, video.id || video.uri)}>
+                {openingAttachmentId === (video.id || video.uri) ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="play-circle-outline" size={28} color="#fff" />}
                 <Text style={styles.fileAttachmentText} numberOfLines={1}>{video.name || "Attached video"}</Text>
               </TouchableOpacity>
               {canEdit ? (
@@ -574,8 +626,8 @@ export default function NoteScreen({ navigation }: any) {
 
           {pdfList.map((pdf) => (
             <View key={pdf.id || pdf.uri} style={styles.attachmentItem}>
-              <TouchableOpacity style={styles.fileAttachment} onPress={() => Linking.openURL(pdf.uri)}>
-                <Ionicons name="document-text-outline" size={26} color="#fff" />
+              <TouchableOpacity style={styles.fileAttachment} onPress={() => handleOpenAttachment(pdf.uri, pdf.id || pdf.uri)}>
+                {openingAttachmentId === (pdf.id || pdf.uri) ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="document-text-outline" size={26} color="#fff" />}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fileAttachmentText} numberOfLines={1}>{pdf.name || "PDF"}</Text>
                   {pdf.createdAt ? <Text style={styles.fileAttachmentMeta}>{pdf.createdAt}</Text> : null}
@@ -700,6 +752,8 @@ const styles = StyleSheet.create({
   aiMenu: { position: "absolute", right: 72, top: 74, zIndex: 20, backgroundColor: "#1c1c1e", borderRadius: 16, borderWidth: 1, borderColor: "#2c2c2e", overflow: "hidden", minWidth: 220 },
   aiMenuItem: { paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#2c2c2e" },
   aiMenuText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
+  loadingBanner: { position: "absolute", top: 70, alignSelf: "center", zIndex: 30, flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#2563EB", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
+  loadingText: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
   scrollContent: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 40 },
   titleInput: { fontSize: 34, fontWeight: "800", color: "#ffffff", marginBottom: 8 },
   metadataRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },

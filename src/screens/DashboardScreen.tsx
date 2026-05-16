@@ -1,16 +1,19 @@
 import React, { useCallback, useMemo, useState } from "react";
-import {View,Text,Image,ImageBackground, StyleSheet,ScrollView,TouchableOpacity,useWindowDimensions,Platform} from "react-native";
+import {View,Text,Image,ImageBackground, StyleSheet,ScrollView,TouchableOpacity,useWindowDimensions,Platform, Alert} from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 import { HomeCards, CardKind, SectionVariant } from "../components/HomeCards";
 import { getTasks, Task } from "../db/tasks";
 import { getNotes, Note } from "../db/notes";
 import { getMedia, MediaItem } from "../db/media";
+import { addFolder, getFolders, type Folder } from "../db/folders";
 import { getTaggedCountsByContentType, getTaggedContentIds } from "../db/tags";
 import { SPACING } from "../constants/theme";
 import { useAppSettings } from "../settings/AppSettingsContext";
+import { CreateFolderSheet } from "../components/CreateFolderSheet";
 
 type HomeStackParamList = {
   Dashboard: undefined;
@@ -88,6 +91,8 @@ export default function DashboardScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folderSheetVisible, setFolderSheetVisible] = useState(false);
   const [tagged, setTagged] = useState({
     tasks: 0,
     notes: 0,
@@ -105,6 +110,7 @@ export default function DashboardScreen() {
     setTasks(t);
     setNotes(n);
     setMedia(m);
+    setFolders(getFolders());
     setTagged(tag);
   }, []);
 
@@ -159,6 +165,16 @@ export default function DashboardScreen() {
     navigation.navigate(routeName);
   };
 
+  const handleCreateFolder = async (name: string, category: string) => {
+    try {
+      await addFolder(name, category || "General");
+      setFolders(getFolders());
+      setFolderSheetVisible(false);
+    } catch {
+      Alert.alert("Folder error", "Could not create the folder.");
+    }
+  };
+
   const subtitleMyFiles = (kind: CardKind) => {
     const list =
       kind === "todos" ? tasks :
@@ -197,18 +213,25 @@ export default function DashboardScreen() {
   };
 
   const content = (
-    <ScrollView
-      style={[styles.container, isLight && styles.lightContainer]}
-      contentContainerStyle={[
-        styles.contentContainer,
-        {
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + 32
-        }
-      ]}
-      showsVerticalScrollIndicator={false}
-      nestedScrollEnabled={Platform.OS === "android"}
-    >
+    <>
+      <CreateFolderSheet
+        isVisible={folderSheetVisible}
+        onClose={() => setFolderSheetVisible(false)}
+        onCreate={handleCreateFolder}
+        folders={folders}
+      />
+      <ScrollView
+        style={[styles.container, isLight && styles.lightContainer]}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 32
+          }
+        ]}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled={Platform.OS === "android"}
+      >
       <View style={styles.headerRow}>
         <View style={styles.brandRow}>
           <Image
@@ -258,7 +281,32 @@ export default function DashboardScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, isLight && styles.lightText, { fontSize: 15 * textScale }]}>My folders</Text>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, isLight && styles.lightText, { fontSize: 15 * textScale }]}>My folders</Text>
+          <TouchableOpacity style={styles.createFolderButton} activeOpacity={0.85} onPress={() => setFolderSheetVisible(true)}>
+            <MaterialIcons name="create-new-folder" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+        {folders.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.folderStrip}
+            contentContainerStyle={styles.folderStripContent}
+          >
+            {folders.map((folder) => (
+              <TouchableOpacity
+                key={folder.id}
+                style={[styles.folderTile, isLight && styles.lightFolderTile]}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate("FileFolderManager")}
+              >
+                <MaterialIcons name="folder" size={24} color="#58A6FF" />
+                <Text style={[styles.folderTileText, isLight && styles.lightText]} numberOfLines={1}>{folder.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        ) : null}
         <HomeCards
           variant="folders"
           counts={{
@@ -274,7 +322,8 @@ export default function DashboardScreen() {
           onCardPress={(kind) => handlePress(kind, "folders")}
         />
       </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 
   if (isLight) {
@@ -305,5 +354,12 @@ const styles = StyleSheet.create({
   brandLogo: {height: 44,width: 44,marginRight: 10},
   searchBtn: { width: 42,height: 42,borderRadius: 14,backgroundColor: "#1F2A43",justifyContent: "center",alignItems: "center"},
   section: { marginBottom: 14 },
-  sectionTitle: {color: "#fff",fontSize: 15,fontWeight: "600",marginBottom: 8}
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
+  sectionTitle: {color: "#fff",fontSize: 15,fontWeight: "600",marginBottom: 8},
+  createFolderButton: { width: 34, height: 34, borderRadius: 12, backgroundColor: "#4B76E7", alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  folderStrip: { marginBottom: 8 },
+  folderStripContent: { gap: 8, paddingRight: 4 },
+  folderTile: { width: 104, height: 46, borderRadius: 14, backgroundColor: "#1A2535", flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 10 },
+  lightFolderTile: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#DBE4F0" },
+  folderTileText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700", flex: 1 }
 });

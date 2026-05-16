@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import {
   Alert,
+  ActivityIndicator,
   View,
   Text,
   TextInput,
@@ -28,6 +29,7 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
   const [selectedType, setSelectedType] = useState("All");
   const [selectedFolderId, setSelectedFolderId] = useState<number | null>(null);
   const [newFolderName, setNewFolderName] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const insets = useSafeAreaInsets(); // Get system navigation height
   const pan = useRef(new Animated.ValueXY()).current;
 
@@ -62,10 +64,15 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
   ).current;
 
   const savePickedMedia = async (name: string, uri: string, type: "image" | "video" | "audio") => {
-    addMedia(name, uri, type, selectedFolderId);
-    await notifyNewMedia(name);
-    onImported?.();
-    onClose();
+    setIsImporting(true);
+    try {
+      addMedia(name, uri, type, selectedFolderId);
+      await notifyNewMedia(name);
+      onImported?.();
+      onClose();
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const inferMediaType = (file: File): "image" | "video" | "audio" | null => {
@@ -79,17 +86,21 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
 
   const pickAudio = async () => {
     try {
+      setIsImporting(true);
       const picked = await File.pickFileAsync(undefined, "audio/*");
       const file = Array.isArray(picked) ? picked[0] : picked;
       if (!file) return;
       await savePickedMedia(file.name || `Audio ${Date.now()}`, file.uri, "audio");
     } catch {
       Alert.alert("Audio import failed", "Could not import the selected audio file.");
+    } finally {
+      setIsImporting(false);
     }
   };
 
   const pickAnyMediaFile = async () => {
     try {
+      setIsImporting(true);
       const picked = await File.pickFileAsync(undefined, "*/*");
       const file = Array.isArray(picked) ? picked[0] : picked;
       if (!file) return;
@@ -101,6 +112,8 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
       await savePickedMedia(file.name || `Media ${Date.now()}`, file.uri, type);
     } catch {
       Alert.alert("Import failed", "Could not import the selected file.");
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -112,17 +125,22 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
         ? ImagePicker.MediaTypeOptions.Images
         : ImagePicker.MediaTypeOptions.All;
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
-      allowsEditing: true,
-      quality: 1,
-    });
+    try {
+      setIsImporting(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      const asset = result.assets[0];
-      const type = asset.type === "video" ? "video" : "image";
-      const name = asset.fileName?.trim() || `Media ${Date.now()}`;
-      await savePickedMedia(name, asset.uri, type);
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        const type = asset.type === "video" ? "video" : "image";
+        const name = asset.fileName?.trim() || `Media ${Date.now()}`;
+        await savePickedMedia(name, asset.uri, type);
+      }
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -183,6 +201,12 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
               <View>
                 <Text style={styles.heading}>Import your media files here.</Text>
                 <Text style={styles.subtitle}>Choose where you want to save below.</Text>
+                {isImporting ? (
+                  <View style={styles.loadingRow}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.loadingText}>Loading files...</Text>
+                  </View>
+                ) : null}
 
                 <View style={styles.filterRow}>
                   {filters.map((filter) => (
@@ -198,8 +222,8 @@ export default function MediaImportSheet({ isVisible, onClose, onImported }: Med
                   ))}
                 </View>
 
-                <TouchableOpacity style={styles.importButton} onPress={pickMedia}>
-                  <Text style={styles.importText}>Import</Text>
+                <TouchableOpacity style={[styles.importButton, isImporting && styles.importButtonDisabled]} onPress={pickMedia} disabled={isImporting}>
+                  {isImporting ? <ActivityIndicator size="small" color="#FFFFFF" /> : <Text style={styles.importText}>Import</Text>}
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -235,6 +259,8 @@ const styles = StyleSheet.create({
   },
   heading: { color: "#FFFFFF", fontSize: 22, fontWeight: "700", marginBottom: 8 },
   subtitle: { color: "#A3AED0", fontSize: 15, lineHeight: 22, marginBottom: 24 },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#1E293B", borderRadius: 14, padding: 12, marginBottom: 16 },
+  loadingText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 28 },
   filterButton: { paddingVertical: 10, paddingHorizontal: 31, backgroundColor: "#1E293B", borderRadius: 14 },
   filterButtonActive: { backgroundColor: "#3B82F6" },
@@ -251,5 +277,6 @@ const styles = StyleSheet.create({
   createFolderButton: { backgroundColor: "#334155", borderRadius: 14, paddingHorizontal: 14, justifyContent: "center" },
   createFolderText: { color: "#FFFFFF", fontWeight: "800" },
   importButton: { backgroundColor: "#2563EB", borderRadius: 16, paddingVertical: 16, alignItems: "center" },
+  importButtonDisabled: { opacity: 0.65 },
   importText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

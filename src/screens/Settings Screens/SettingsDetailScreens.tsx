@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ImageBackground,
@@ -12,7 +13,6 @@ import {
   TouchableOpacity,
   View,
   Share,
-  Linking,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import * as Notifications from "expo-notifications";
@@ -40,6 +40,7 @@ import { File, Paths } from "expo-file-system";
 
 import { DeviceEventEmitter } from "react-native";
 import { createCloudSnapshot, restoreCloudSnapshot, type StudySyncCloudSnapshot } from "../../db/cloudSync";
+import { openFileUri } from "../../lib/openFile";
 
 
 type RowProps = {
@@ -631,6 +632,7 @@ export function BackupManagerScreen() {
 
 export function ImportedFilesManagerScreen() {
   const [media, setMedia] = useState(getMedia());
+  const [openingId, setOpeningId] = useState<number | null>(null);
 
   const refresh = () => setMedia(getMedia());
   const remove = (id: number, name: string) => {
@@ -641,6 +643,16 @@ export function ImportedFilesManagerScreen() {
         refresh();
       }},
     ]);
+  };
+  const openImported = async (id: number, uri?: string | null) => {
+    try {
+      setOpeningId(id);
+      await openFileUri(uri);
+    } catch {
+      Alert.alert("Preview unavailable", "This file cannot be opened from its saved location.");
+    } finally {
+      setOpeningId(null);
+    }
   };
 
   return (
@@ -654,8 +666,12 @@ export function ImportedFilesManagerScreen() {
             title={item.name || "Imported file"}
             subtitle={`${item.type || "file"} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : "No date"}`}
             icon={item.type === "audio" ? "audiotrack" : item.type === "video" ? "movie" : "image"}
-            onPress={() => item.uri && Linking.openURL(item.uri)}
-            right={<TouchableOpacity onPress={() => remove(item.id, item.name || "")} hitSlop={10}><MaterialIcons name="delete-outline" size={22} color="#F87171" /></TouchableOpacity>}
+            onPress={() => openImported(item.id, item.uri)}
+            right={openingId === item.id ? (
+              <ActivityIndicator size="small" color="#58A6FF" />
+            ) : (
+              <TouchableOpacity onPress={() => remove(item.id, item.name || "")} hitSlop={10}><MaterialIcons name="delete-outline" size={22} color="#F87171" /></TouchableOpacity>
+            )}
           />
         ))
       )}
@@ -683,7 +699,6 @@ export function CloudSyncScreen() {
     }
     return userId;
   };
-
   const uploadSnapshot = async () => {
     const userId = await getUserId();
     if (!userId) return;

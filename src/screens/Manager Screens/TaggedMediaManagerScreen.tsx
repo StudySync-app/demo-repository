@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -7,6 +7,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { getMedia, type MediaItem } from "../../db/media";
 import { getTaggedContentIds, toggleContentTag } from "../../db/tags";
 import { useAppSettings } from "../../settings/AppSettingsContext";
+import { openFileUri } from "../../lib/openFile";
 
 export default function TaggedMediaManagerScreen() {
   const navigation = useNavigation<any>();
@@ -14,6 +15,7 @@ export default function TaggedMediaManagerScreen() {
   const { isLight, textScale } = useAppSettings();
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [ids, setIds] = useState<Set<number>>(new Set());
+  const [openingId, setOpeningId] = useState<number | null>(null);
 
   const refresh = useCallback(() => {
     setMedia(getMedia());
@@ -23,6 +25,17 @@ export default function TaggedMediaManagerScreen() {
   useFocusEffect(refresh);
 
   const taggedMedia = useMemo(() => media.filter((item) => ids.has(item.id)), [ids, media]);
+
+  const openMedia = async (item: MediaItem) => {
+    try {
+      setOpeningId(item.id);
+      await openFileUri(item.uri);
+    } catch {
+      Alert.alert("Preview unavailable", "This file cannot be opened from its saved location.");
+    } finally {
+      setOpeningId(null);
+    }
+  };
 
   return (
     <View style={[styles.container, isLight && styles.lightContainer, { paddingTop: insets.top + 12 }]}>
@@ -50,8 +63,8 @@ export default function TaggedMediaManagerScreen() {
                 <Text style={[styles.cardSubtitle, isLight && styles.lightSubtitle]}>{item.type || "file"}</Text>
               </View>
               {item.uri ? (
-                <TouchableOpacity onPress={() => Linking.openURL(item.uri!)} style={styles.iconButton}>
-                  <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />
+                <TouchableOpacity onPress={() => openMedia(item)} style={styles.iconButton}>
+                  {openingId === item.id ? <ActivityIndicator size="small" color="#FFFFFF" /> : <MaterialIcons name="open-in-new" size={20} color="#FFFFFF" />}
                 </TouchableOpacity>
               ) : null}
               <TouchableOpacity onPress={() => {

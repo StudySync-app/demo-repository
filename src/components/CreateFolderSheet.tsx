@@ -26,10 +26,12 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
   const [folderName, setFolderName] = useState('');
 
   const handleCreate = () => {
-    if (folderName.trim()) {
-      setFolderName('');
-      onClose();
-    }
+    const name = folderName.trim();
+    if (!name) return;
+
+    onCreate(name, 'General');
+    setFolderName('');
+    onClose();
   };
 
   return (

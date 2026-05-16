@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { Alert, Image, Linking, ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View, StyleSheet } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
@@ -8,6 +8,7 @@ import { isContentTagged, toggleContentTag } from "../../db/tags";
 import { addFolder, getFolders } from "../../db/folders";
 import { CreateFolderSheet } from "../../components/CreateFolderSheet";
 import { useAppSettings } from "../../settings/AppSettingsContext";
+import { openFileUri } from "../../lib/openFile";
 
 export default function FileMediaManagerScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -16,6 +17,7 @@ export default function FileMediaManagerScreen({ navigation }: any) {
   const [typeFilter, setTypeFilter] = useState<"all" | "image" | "video" | "audio">("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const [folderSheetVisible, setFolderSheetVisible] = useState(false);
+  const [openingId, setOpeningId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     setItems(getMedia());
@@ -39,11 +41,13 @@ export default function FileMediaManagerScreen({ navigation }: any) {
 
   const openMedia = async (item: MediaItem) => {
     if (!item.uri) return;
-    const canOpen = await Linking.canOpenURL(item.uri);
-    if (canOpen) {
-      await Linking.openURL(item.uri);
-    } else {
+    try {
+      setOpeningId(item.id);
+      await openFileUri(item.uri);
+    } catch {
       Alert.alert("Preview unavailable", "This file cannot be opened from its saved location.");
+    } finally {
+      setOpeningId(null);
     }
   };
 
@@ -125,11 +129,11 @@ export default function FileMediaManagerScreen({ navigation }: any) {
                 <Image source={{ uri: item.uri }} style={styles.thumbnail} />
               ) : (
                 <View style={styles.thumbnail}>
-                  <MaterialIcons
+                  {openingId === item.id ? <ActivityIndicator size="small" color="#FFFFFF" /> : <MaterialIcons
                     name={item.type === "video" ? "play-circle-outline" : "audiotrack"}
                     size={34}
                     color="#FFFFFF"
-                  />
+                  />}
                 </View>
               )}
               <View style={styles.cardBody}>

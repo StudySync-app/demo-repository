@@ -18,6 +18,7 @@ import ForgotPasswordScreen from "./src/screens/Auth/ForgotPasswordScreen";
 import MainTabs from "./src/navigation/MainTabs";
 import { configureNotifications } from "./src/lib/notification";
 import { AppSettingsProvider } from "./src/settings/AppSettingsContext";
+import { initDatabase } from "./src/db/init";
 
 // ✅ Navigation Types
 export type RootStackParamList = {
@@ -39,6 +40,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    initDatabase();
     configureNotifications();
   }, []);
 
