@@ -61,7 +61,7 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
              <Text style={styles.sheetTitle}>New Folder</Text>
           </View>
 
-          <Text style={styles.sectionLabel}>Choose existing folder</Text>
+          <Text style={styles.sectionLabel}>Existing folder</Text>
           <View style={styles.folderRow}>
             <TouchableOpacity
               style={[styles.folderChip, selectedFolderId == null && styles.folderChipActive]}
@@ -95,34 +95,13 @@ export const CreateFolderSheet = ({ isVisible, onClose, onCreate, folders = [], 
               cursorColor="#4B76E7"
             />
           </View>
-
-          <Text style={styles.description}>
-            Organize your tasks by creating a matching folder. Choose a media category to help with filtering.
-          </Text>
-
-          <View style={styles.categoryRow}>
-            {CATEGORIES.map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[
-                  styles.categoryBtn,
-                  selectedCategory === cat && styles.categoryBtnActive,
-                ]}
-                onPress={() => setSelectedCategory(cat)}
-              >
-                <Text style={[
-                    styles.categoryText,
-                    selectedCategory === cat && styles.categoryTextActive
-                ]}>{cat}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          
           <TouchableOpacity 
             style={styles.createButton} 
             onPress={handleCreate}
             activeOpacity={0.8}
           >
-            <Text style={styles.createButtonText}>Create and folder this file</Text>
+            <Text style={styles.createButtonText}>Create folder</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

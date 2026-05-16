@@ -23,7 +23,7 @@ export default function FileTasksManagerScreen() {
   const { tasks, loadTasks } = useTaskStore();
   // State to track if we are viewing archived (completed) tasks
   const [showArchived, setShowArchived] = useState(false);
-
+  
   useFocusEffect(
     useCallback(() => {
       loadTasks();
@@ -107,23 +107,15 @@ const handleRestore = async (taskId: number) => {
               color="#FFF" 
             />
           </TouchableOpacity>
-
-          <TouchableOpacity 
-              style={styles.actionBtn} 
-              onPress={() => navigation.navigate("TasksScreen")}
-            >
-              <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
-            </TouchableOpacity>
-
-          {/* Add Task Button (Optional: Keep or hide when in archive) */}
           {!showArchived && (
             <TouchableOpacity 
               style={styles.actionBtn} 
               onPress={() => navigation.navigate("TasksScreen")}
             >
-              <MaterialIcons name="add" size={24} color="#FFF" />
+              <MaterialIcons name="create-new-folder" size={24} color="#FFF" />
             </TouchableOpacity>
           )}
+          
         </View>
       </View>
 
